@@ -1,0 +1,38 @@
+{
+    "name": "webkul/mcp-server",
+    "description": "MCP Server package for Bagisto — expose store data to AI agents via Model Context Protocol",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["bagisto", "mcp", "model-context-protocol", "ai", "laravel", "ecommerce"],
+    "homepage": "https://github.com/webkul/mcp-server",
+    "authors": [
+        {
+            "name": "Webkul Software",
+            "email": "support@webkul.com",
+            "homepage": "https://webkul.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/webkul/mcp-server/issues",
+        "source": "https://github.com/webkul/mcp-server"
+    },
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^12.41",
+        "laravel/mcp": "^0.6",
+        "php-open-source-saver/jwt-auth": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Webkul\\McpServer\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Webkul\\McpServer\\Providers\\McpServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable"
+}
