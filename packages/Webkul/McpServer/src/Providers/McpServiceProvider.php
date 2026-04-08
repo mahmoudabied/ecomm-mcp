@@ -5,8 +5,8 @@ namespace Webkul\McpServer\Providers;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
 
 class McpServiceProvider extends ServiceProvider
 {
@@ -18,7 +18,11 @@ class McpServiceProvider extends ServiceProvider
             );
         }
 
-        $this->mergeConfigFrom(__DIR__ . '/../../config/mcp.php', 'mcp');
+        $this->mergeConfigFrom(__DIR__.'/../../config/mcp.php', 'mcp');
+
+        $this->commands([
+            \Webkul\McpServer\Console\Commands\McpAgentCommand::class,
+        ]);
 
         config([
             'auth.guards.customer-jwt' => [
@@ -38,9 +42,9 @@ class McpServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->loadRoutesFrom(__DIR__ . '/../../routes/mcp.php');
+        $this->loadRoutesFrom(__DIR__.'/../../routes/mcp.php');
 
-        $this->mergeConfigFrom(__DIR__ . '/../../config/acl.php', 'acl');
+        $this->mergeConfigFrom(__DIR__.'/../../config/acl.php', 'acl');
 
         Route::aliasMiddleware(
             'mcp.resolve-channel',
@@ -48,7 +52,7 @@ class McpServiceProvider extends ServiceProvider
         );
 
         $this->publishes([
-            __DIR__ . '/../../config/mcp.php' => config_path('mcp.php'),
+            __DIR__.'/../../config/mcp.php' => config_path('mcp.php'),
         ], 'mcp-config');
 
         $jwtContract = \PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject::class;

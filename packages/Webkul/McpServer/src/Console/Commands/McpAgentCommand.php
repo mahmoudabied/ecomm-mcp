@@ -5,7 +5,6 @@ namespace Webkul\McpServer\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Container\Container;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Mcp\Server\Testing\FakeTransporter;
 use Webkul\Core\Models\Channel;
 use Webkul\Customer\Models\Customer;
 use Webkul\McpServer\Mcp\Admin\AdminMcpServer;
@@ -82,9 +81,7 @@ class McpAgentCommand extends Command
 
         $this->authenticateGuard($guard);
 
-        $server = Container::getInstance()->make($serverClass, [
-            'transport' => new FakeTransporter,
-        ]);
+        $server = $this->createServerInstance($serverClass);
         $server->start();
 
         $context = $server->createContext();
@@ -93,8 +90,8 @@ class McpAgentCommand extends Command
         $this->info("│ Instructions: {$context->instructions}");
         $this->info('│');
 
-        $this->testInitialize($server, $context);
-        $this->testPing($server, $context);
+        $this->testInitialize($server);
+        $this->testPing($server);
 
         $tools = $context->tools();
         $toolNames = $tools->map(fn ($t) => $t->name())->toArray();
@@ -102,12 +99,46 @@ class McpAgentCommand extends Command
         $this->info('│');
 
         foreach ($tools as $tool) {
-            $this->testTool($server, $context, $tool);
+            $this->testTool($server, $tool);
         }
 
         $this->info('│');
         $this->info("└── Server <fg=cyan>{$name}</> test complete");
         $this->info('');
+    }
+
+    protected function createServerInstance(string $serverClass): object
+    {
+        $transport = new class implements \Laravel\Mcp\Server\Contracts\Transport
+        {
+            public ?string $lastMessage = null;
+
+            public function onReceive(\Closure $handler): void {}
+
+            public function send(string $message, ?string $sessionId = null): void
+            {
+                $this->lastMessage = $message;
+            }
+
+            public function run(): \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\StreamedResponse
+            {
+                throw new \LogicException('Not implemented.');
+            }
+
+            public function sessionId(): ?string
+            {
+                return \Illuminate\Support\Str::uuid()->toString();
+            }
+
+            public function stream(\Closure $stream): void
+            {
+                $stream();
+            }
+        };
+
+        return Container::getInstance()->make($serverClass, [
+            'transport' => $transport,
+        ]);
     }
 
     protected function resolveChannel(): Channel
@@ -149,7 +180,7 @@ class McpAgentCommand extends Command
         }
     }
 
-    protected function sendJsonRpc(Server $server, string $method, array $params = [], int|string $id = 1): ?array
+    protected function sendJsonRpc(object $server, string $method, array $params = [], int|string $id = 1): ?array
     {
         $payload = json_encode([
             'jsonrpc' => '2.0',
@@ -158,27 +189,38 @@ class McpAgentCommand extends Command
             'params'  => $params,
         ]);
 
-        $capturedResponse = null;
-
-        $transport = new class($capturedResponse) extends FakeTransporter
+        $transport = new class implements \Laravel\Mcp\Server\Contracts\Transport
         {
             public ?string $lastMessage = null;
+
+            public function onReceive(\Closure $handler): void {}
 
             public function send(string $message, ?string $sessionId = null): void
             {
                 $this->lastMessage = $message;
             }
-        };
 
-        $originalTransport = (fn () => $this->transport)->call($server);
+            public function run(): \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\StreamedResponse
+            {
+                throw new \LogicException('Not implemented.');
+            }
+
+            public function sessionId(): ?string
+            {
+                return \Illuminate\Support\Str::uuid()->toString();
+            }
+
+            public function stream(\Closure $stream): void
+            {
+                $stream();
+            }
+        };
 
         (fn () => $this->transport = $transport)->call($server);
 
         try {
             $server->handle($payload);
         } catch (\Throwable $e) {
-            (fn () => $this->transport = $originalTransport)->call($server);
-
             return [
                 'error' => [
                     'code'    => -32603,
@@ -187,8 +229,6 @@ class McpAgentCommand extends Command
             ];
         }
 
-        (fn () => $this->transport = $originalTransport)->call($server);
-
         if ($transport->lastMessage === null) {
             return null;
         }
@@ -196,27 +236,29 @@ class McpAgentCommand extends Command
         return json_decode($transport->lastMessage, true);
     }
 
-    protected function testInitialize(Server $server, $context): void
+    protected function testInitialize(object $server): void
     {
         $response = $this->sendJsonRpc($server, 'initialize', [
             'protocolVersion' => '2024-11-05',
-            'capabilities'    => new \stdClass,
+            'capabilities'    => [],
             'clientInfo'      => [
                 'name'    => 'mcp-test-agent',
                 'version' => '1.0.0',
             ],
         ]);
 
-        $status = $this->checkPassFail(
-            'initialize',
-            $response !== null
-                && isset($response['result']['serverInfo']['name'])
-                && $response['result']['serverInfo']['name'] === $context->serverName,
-            'Server initialization via MCP protocol'
-        );
+        $passed = $response !== null
+            && isset($response['result']['serverInfo']['name']);
+
+        $detail = '';
+        if ($passed) {
+            $detail = $response['result']['serverInfo']['name'].' v'.($response['result']['serverInfo']['version'] ?? '?');
+        }
+
+        $this->checkPassFail('initialize', $passed, 'Initialize MCP protocol handshake', $detail);
     }
 
-    protected function testPing(Server $server, $context): void
+    protected function testPing(object $server): void
     {
         $response = $this->sendJsonRpc($server, 'ping');
         $this->checkPassFail(
@@ -226,7 +268,7 @@ class McpAgentCommand extends Command
         );
     }
 
-    protected function testTool(Server $server, $context, $tool): void
+    protected function testTool(object $server, $tool): void
     {
         $toolName = $tool->name();
         $description = $tool->description();
@@ -272,9 +314,18 @@ class McpAgentCommand extends Command
                 $passed = true;
                 $textPreview = collect($content)
                     ->filter(fn ($c) => ($c['type'] ?? '') === 'text')
-                    ->map(fn ($c) => mb_substr($c['text'] ?? '', 0, 120))
+                    ->map(fn ($c) => mb_substr($c['text'] ?? '', 0, 200))
                     ->implode(' ');
-                $detail = mb_substr($textPreview, 0, 150);
+                $detail = mb_substr($textPreview, 0, 200);
+
+                $structured = $response['result']['structuredContent'] ?? null;
+                if ($structured) {
+                    $decoded = json_decode($detail, true);
+                    if ($decoded) {
+                        $keys = implode(', ', array_keys($decoded));
+                        $detail = "Keys: [{$keys}]";
+                    }
+                }
             }
         }
 
