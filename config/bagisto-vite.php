@@ -28,5 +28,11 @@ return [
             'build_directory'          => 'themes/installer/default/build',
             'package_assets_directory' => 'src/Resources/assets',
         ],
+
+        'amacommerce' => [
+            'hot_file'                 => 'amacommerce-theme-vite.hot',
+            'build_directory'          => 'themes/shop/amacommerce/build',
+            'package_assets_directory' => 'src/Resources/assets',
+        ],
     ],
 ];

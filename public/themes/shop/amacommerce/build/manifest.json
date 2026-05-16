@@ -1,0 +1,92 @@
+{
+  "src/Resources/assets/css/app.css": {
+    "file": "assets/app-Cob2o8cJ.css",
+    "src": "src/Resources/assets/css/app.css",
+    "isEntry": true
+  },
+  "src/Resources/assets/images/arrivals/perfume.png": {
+    "file": "assets/perfume-CUKv6o2Y.png",
+    "src": "src/Resources/assets/images/arrivals/perfume.png"
+  },
+  "src/Resources/assets/images/arrivals/ps5.png": {
+    "file": "assets/ps5-DTCto41a.png",
+    "src": "src/Resources/assets/images/arrivals/ps5.png"
+  },
+  "src/Resources/assets/images/arrivals/speakers.png": {
+    "file": "assets/speakers-Cs40Ks8D.png",
+    "src": "src/Resources/assets/images/arrivals/speakers.png"
+  },
+  "src/Resources/assets/images/arrivals/womens-collection.png": {
+    "file": "assets/womens-collection-BLHIGTVg.png",
+    "src": "src/Resources/assets/images/arrivals/womens-collection.png"
+  },
+  "src/Resources/assets/images/auth/shopping-side.png": {
+    "file": "assets/shopping-side-BhSwvxOP.png",
+    "src": "src/Resources/assets/images/auth/shopping-side.png"
+  },
+  "src/Resources/assets/images/categories/camera.svg": {
+    "file": "assets/camera-TH4RH4Ti.svg",
+    "src": "src/Resources/assets/images/categories/camera.svg"
+  },
+  "src/Resources/assets/images/categories/computer.svg": {
+    "file": "assets/computer-CZmqiGZv.svg",
+    "src": "src/Resources/assets/images/categories/computer.svg"
+  },
+  "src/Resources/assets/images/categories/gaming.svg": {
+    "file": "assets/gaming-DY59BmQ6.svg",
+    "src": "src/Resources/assets/images/categories/gaming.svg"
+  },
+  "src/Resources/assets/images/categories/headphones.svg": {
+    "file": "assets/headphones-CGEXkYZA.svg",
+    "src": "src/Resources/assets/images/categories/headphones.svg"
+  },
+  "src/Resources/assets/images/categories/phone.svg": {
+    "file": "assets/phone-D27ZOE64.svg",
+    "src": "src/Resources/assets/images/categories/phone.svg"
+  },
+  "src/Resources/assets/images/categories/smartwatch.svg": {
+    "file": "assets/smartwatch-C4zI1uMO.svg",
+    "src": "src/Resources/assets/images/categories/smartwatch.svg"
+  },
+  "src/Resources/assets/images/default-language.svg": {
+    "file": "assets/default-language-BxH8WlkY.svg",
+    "src": "src/Resources/assets/images/default-language.svg"
+  },
+  "src/Resources/assets/images/favicon.ico": {
+    "file": "assets/favicon-Df9chQdB.ico",
+    "src": "src/Resources/assets/images/favicon.ico"
+  },
+  "src/Resources/assets/images/hero/iphone-banner.png": {
+    "file": "assets/iphone-banner-BpgDH3Jb.png",
+    "src": "src/Resources/assets/images/hero/iphone-banner.png"
+  },
+  "src/Resources/assets/images/logo.svg": {
+    "file": "assets/logo-DBT80dcp.svg",
+    "src": "src/Resources/assets/images/logo.svg"
+  },
+  "src/Resources/assets/images/promo/jbl-speaker.png": {
+    "file": "assets/jbl-speaker-BAWcAQ42.png",
+    "src": "src/Resources/assets/images/promo/jbl-speaker.png"
+  },
+  "src/Resources/assets/images/services/customer-service.svg": {
+    "file": "assets/customer-service-Bm2f-JHy.svg",
+    "src": "src/Resources/assets/images/services/customer-service.svg"
+  },
+  "src/Resources/assets/images/services/delivery.svg": {
+    "file": "assets/delivery-BLwwOuPH.svg",
+    "src": "src/Resources/assets/images/services/delivery.svg"
+  },
+  "src/Resources/assets/images/services/money-back.svg": {
+    "file": "assets/money-back-Cj3vrIhB.svg",
+    "src": "src/Resources/assets/images/services/money-back.svg"
+  },
+  "src/Resources/assets/js/app.js": {
+    "file": "assets/app-DKcl2W7p.js",
+    "name": "app",
+    "src": "src/Resources/assets/js/app.js",
+    "isEntry": true,
+    "css": [
+      "assets/app-Cob2o8cJ.css"
+    ]
+  }
+}

@@ -10,9 +10,20 @@ return [
     |
     */
 
-    'shop-default' => 'default',
+    'shop-default' => 'amacommerce',
 
     'shop' => [
+        'amacommerce' => [
+            'name'        => 'Amacommerce Theme',
+            'assets_path' => 'public/themes/shop/amacommerce',
+            'views_path'  => 'resources/themes/amacommerce/views',
+
+            'vite'        => [
+                'hot_file'                 => 'amacommerce-theme-vite.hot',
+                'build_directory'          => 'themes/shop/amacommerce/build',
+                'package_assets_directory' => 'src/Resources/assets',
+            ],
+        ],
         'default' => [
             'name'        => 'Default',
             'assets_path' => 'public/themes/shop/default',

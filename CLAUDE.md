@@ -212,3 +212,10 @@ $this->app->singleton(Service::class, fn () => new Service(fn () => request()));
 - Do NOT delete tests without approval.
 
 </laravel-boost-guidelines>
+
+## Active Technologies
+- PHP 8.2+ / Laravel 11.x / Blade templates + Bagisto 2.x core, Tailwind CSS 3.x, Vite 5.x, Vue 3 (inline components) (001-figma-ecommerce-theme)
+- N/A (presentation layer only — uses Bagisto's existing database) (001-figma-ecommerce-theme)
+
+## Recent Changes
+- 001-figma-ecommerce-theme: Added PHP 8.2+ / Laravel 11.x / Blade templates + Bagisto 2.x core, Tailwind CSS 3.x, Vite 5.x, Vue 3 (inline components)

@@ -68,6 +68,7 @@
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
             "Webkul\\Admin\\": "packages/Webkul/Admin/src",
+            "Webkul\\AmacommerceTheme\\": "packages/Webkul/AmacommerceTheme/src",
             "Webkul\\Attribute\\": "packages/Webkul/Attribute/src",
             "Webkul\\BookingProduct\\": "packages/Webkul/BookingProduct/src",
             "Webkul\\CartRule\\": "packages/Webkul/CartRule/src",
