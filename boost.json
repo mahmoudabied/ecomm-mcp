@@ -1,0 +1,22 @@
+{
+    "agents": [
+        "claude_code",
+        "opencode",
+        "gemini"
+    ],
+    "cloud": false,
+    "guidelines": true,
+    "mcp": true,
+    "nightwatch": false,
+    "packages": [
+        "spatie/laravel-multitenancy"
+    ],
+    "sail": false,
+    "skills": [
+        "laravel-best-practices",
+        "mcp-development",
+        "socialite-development",
+        "pest-testing",
+        "laravel-multitenancy-development"
+    ]
+}

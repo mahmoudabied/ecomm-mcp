@@ -10,13 +10,23 @@ use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
 use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Webkul\Core\Http\Middleware\SecureHeaders;
 use Webkul\Installer\Http\Middleware\CanInstall;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 
 return Application::configure(basePath: dirname(__DIR__))
-    ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        commands: __DIR__.'/../routes/console.php',
-        health: '/up',
-    )
+    ->withMiddleware(function (Middleware $middleware) {
+      // ... rest of middleware setup
+
+        /**
+         * Remove session and cookie middleware from the 'web' middleware group.
+         */
+        $middleware->removeFromGroup('web', [StartSession::class, AddQueuedCookiesToResponse::class]);
+
+        /**
+         * Adding session and cookie middleware globally to apply across non-web routes (e.g. GraphQL)
+         */
+        $middleware->append([StartSession::class, AddQueuedCookiesToResponse::class]);
+    })
     ->withMiddleware(function (Middleware $middleware) {
         /**
          * Remove the default Laravel middleware that prevents requests during maintenance mode. There are three
