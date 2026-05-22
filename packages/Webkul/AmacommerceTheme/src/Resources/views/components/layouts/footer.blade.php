@@ -39,7 +39,7 @@
                     <li><a href="#">Privacy Policy</a></li>
                     <li><a href="#">Terms Of Use</a></li>
                     <li><a href="#">FAQ</a></li>
-                    <li><a href="{{ route('shop.home.contact_us.index') }}">Contact</a></li>
+                    <li><a href="{{ route('shop.home.contact_us') }}">Contact</a></li>
                 </ul>
             </div>
 

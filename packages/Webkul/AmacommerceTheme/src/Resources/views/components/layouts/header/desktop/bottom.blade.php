@@ -13,20 +13,23 @@
 
         <ul class="flex items-center gap-12 text-base">
             <li><a href="{{ route('shop.home.index') }}">Home</a></li>
-            <li><a href="{{ route('shop.home.contact_us.index') }}">Contact</a></li>
+            <li><a href="{{ route('shop.home.contact_us') }}">Contact</a></li>
             <li><a href="{{ route('shop.cms.page', 'about-us') }}">About</a></li>
             <li><a href="{{ route('shop.customers.register.index') }}">Sign Up</a></li>
         </ul>
 
         <div class="flex items-center gap-6">
-            <div class="flex items-center bg-bg-secondary rounded px-3 py-2">
+            <form action="{{ route('shop.search.index') }}" class="flex items-center bg-bg-secondary rounded px-3 py-2">
                 <input
                     type="text"
+                    name="query"
                     placeholder="What are you looking for?"
                     class="bg-transparent text-sm outline-none w-48"
                 />
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2 opacity-50"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </div>
+                <button type="submit">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2 opacity-50 hover:opacity-100 transition"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </button>
+            </form>
 
             @if (core()->getConfigData('customer.settings.wishlist.wishlist_option'))
                 <a href="{{ route('shop.customers.account.wishlist.index') }}" class="relative">

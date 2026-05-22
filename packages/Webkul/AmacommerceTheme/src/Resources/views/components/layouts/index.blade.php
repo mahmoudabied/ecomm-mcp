@@ -18,6 +18,19 @@
 
         <link rel="icon" sizes="16x16" href="{{ core()->getCurrentChannel()->favicon_url ?? bagisto_asset('images/favicon.ico') }}" />
 
+        <script>
+            window._vueAppQueue = { components: [], directives: [], plugins: [], mounted: false };
+            window.app = new Proxy({}, {
+                get(_, prop) {
+                    if (prop === 'component') return function() { window._vueAppQueue.components.push(arguments); return window.app; };
+                    if (prop === 'directive') return function() { window._vueAppQueue.directives.push(arguments); return window.app; };
+                    if (prop === 'use') return function() { window._vueAppQueue.plugins.push(arguments); return window.app; };
+                    if (prop === 'mount') return function(el) { window._vueAppQueue.mountEl = el; };
+                    if (prop === 'config') return { globalProperties: {} };
+                }
+            });
+        </script>
+
         @bagistoVite(['src/Resources/assets/css/app.css', 'src/Resources/assets/js/app.js'], 'amacommerce')
 
         <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
@@ -54,12 +67,5 @@
         {!! view_render_event('bagisto.shop.layout.body.after') !!}
 
         @stack('scripts')
-        <script>
-            window.addEventListener("load", function () {
-                if (typeof app !== 'undefined') {
-                    app.mount("#app");
-                }
-            });
-        </script>
     </body>
 </html>

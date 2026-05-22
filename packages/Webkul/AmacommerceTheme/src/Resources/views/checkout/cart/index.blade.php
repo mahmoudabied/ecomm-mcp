@@ -250,7 +250,7 @@
                             </button>
                         </div>
 
-                        <div class="flex justify-between mt-10 gap-[170px] max-lg:flex-col max-lg:gap-8">
+                        <div class="flex flex-col lg:flex-row justify-between mt-10 gap-8 lg:gap-12">
                             <div>
                                 <div class="flex gap-4">
                                     <input
@@ -273,7 +273,7 @@
                                 </div>
                             </div>
 
-                            <div class="border-2 border-black rounded p-6 w-[470px] max-w-full">
+                            <div class="border-2 border-black rounded p-6 w-full lg:w-[470px] shrink-0">
                                 <h3 class="text-xl font-medium mb-6">Cart Total</h3>
 
                                 <template v-if="displayTax.subtotal == 'including_tax'">
@@ -327,21 +327,22 @@
 
                     <div
                         v-else
-                        class="m-auto grid w-full place-content-center items-center justify-items-center py-32 text-center"
+                        class="flex flex-col items-center justify-center py-20 md:py-32 text-center"
                     >
                         <img
-                            class="max-md:h-[100px] max-md:w-[100px]"
+                            class="w-[120px] h-[120px] md:w-[180px] md:h-[180px] opacity-60"
                             src="{{ bagisto_asset('images/thank-you.png') }}"
                             alt="Empty cart"
                             loading="lazy"
                             decoding="async"
                         />
 
-                        <p class="text-xl mt-4">Your cart is empty</p>
+                        <h2 class="text-2xl md:text-3xl font-semibold mt-8">Your cart is empty</h2>
+                        <p class="text-text-secondary mt-2 text-sm md:text-base">Looks like you haven't added anything to your cart yet.</p>
 
                         <a
                             href="{{ route('shop.home.index') }}"
-                            class="mt-4 inline-block bg-primary text-white px-12 py-4 rounded text-base font-medium hover:bg-primary-hover transition"
+                            class="mt-8 inline-block bg-primary text-white px-12 py-4 rounded text-base font-medium hover:bg-primary-hover transition"
                         >
                             Continue Shopping
                         </a>

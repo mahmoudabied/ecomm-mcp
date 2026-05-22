@@ -13,11 +13,9 @@
         <x-shop::layouts.account.navigation />
     </div>
 
-    <span class="mb-5 mt-2 w-full border-t border-border-color"></span>
-
     @auth('customer')
-        <div class="mx-4">
-            <div class="mx-auto w-[400px] rounded-lg border border-border-color py-2.5 text-center max-sm:w-full max-sm:py-1.5">
+        <div class="mx-4 mt-4">
+            <div class="mx-auto max-w-[400px] rounded border border-border-color py-3 text-center">
                 <x-shop::form
                     method="DELETE"
                     action="{{ route('shop.customer.session.destroy') }}"
@@ -25,7 +23,7 @@
                 />
 
                 <a
-                    class="flex items-center justify-center gap-1.5 text-base hover:bg-bg-secondary transition"
+                    class="flex items-center justify-center gap-2 text-base text-primary font-medium hover:bg-bg-secondary transition px-4 py-1"
                     href="{{ route('shop.customer.session.destroy') }}"
                     onclick="event.preventDefault(); document.getElementById('customerLogout').submit();"
                 >

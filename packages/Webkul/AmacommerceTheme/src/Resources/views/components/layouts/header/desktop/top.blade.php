@@ -49,7 +49,7 @@
 @pushOnce('scripts')
     <script type="text/x-template" id="v-topbar-template">
         <div>
-            {{ $slot }}
+            <slot></slot>
         </div>
     </script>
 

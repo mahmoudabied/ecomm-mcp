@@ -13,12 +13,20 @@
     </x-slot>
 
     <div class="flex min-h-screen">
-        <div class="w-1/2 hidden lg:block bg-[#CBE4E8]">
-            <img
-                src="{{ bagisto_asset('images/auth/shopping-side.png') }}"
-                alt="Shopping"
-                class="w-full h-full object-cover"
-            />
+        <div class="w-1/2 hidden lg:flex bg-[#CBE4E8] items-center justify-center relative overflow-hidden">
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-10 left-10 w-32 h-32 rounded-full bg-white"></div>
+                <div class="absolute bottom-20 right-20 w-48 h-48 rounded-full bg-white"></div>
+                <div class="absolute top-1/3 right-10 w-24 h-24 rounded-full bg-white"></div>
+            </div>
+            <div class="relative z-10 text-center px-16">
+                <svg class="w-48 h-48 mx-auto mb-8 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+                <h2 class="text-3xl font-semibold text-gray-700 mb-3">Welcome Back</h2>
+                <p class="text-gray-500 text-lg">Shop the latest trends and exclusive deals</p>
+            </div>
         </div>
 
         <div class="w-full lg:w-1/2 flex items-center justify-center px-20 max-md:px-8">

@@ -1,23 +1,23 @@
 {
   "src/Resources/assets/css/app.css": {
-    "file": "assets/app-Cob2o8cJ.css",
+    "file": "assets/app-B9DweljY.css",
     "src": "src/Resources/assets/css/app.css",
     "isEntry": true
   },
   "src/Resources/assets/images/arrivals/perfume.png": {
-    "file": "assets/perfume-CUKv6o2Y.png",
+    "file": "assets/perfume-DzKzJ1i7.png",
     "src": "src/Resources/assets/images/arrivals/perfume.png"
   },
   "src/Resources/assets/images/arrivals/ps5.png": {
-    "file": "assets/ps5-DTCto41a.png",
+    "file": "assets/ps5-VTZwKMN9.png",
     "src": "src/Resources/assets/images/arrivals/ps5.png"
   },
   "src/Resources/assets/images/arrivals/speakers.png": {
-    "file": "assets/speakers-Cs40Ks8D.png",
+    "file": "assets/speakers-BBJDJb0r.png",
     "src": "src/Resources/assets/images/arrivals/speakers.png"
   },
   "src/Resources/assets/images/arrivals/womens-collection.png": {
-    "file": "assets/womens-collection-BLHIGTVg.png",
+    "file": "assets/womens-collection-CNnE8bqY.png",
     "src": "src/Resources/assets/images/arrivals/womens-collection.png"
   },
   "src/Resources/assets/images/auth/shopping-side.png": {
@@ -57,7 +57,7 @@
     "src": "src/Resources/assets/images/favicon.ico"
   },
   "src/Resources/assets/images/hero/iphone-banner.png": {
-    "file": "assets/iphone-banner-BpgDH3Jb.png",
+    "file": "assets/iphone-banner-CntETUre.png",
     "src": "src/Resources/assets/images/hero/iphone-banner.png"
   },
   "src/Resources/assets/images/logo.svg": {
@@ -65,7 +65,7 @@
     "src": "src/Resources/assets/images/logo.svg"
   },
   "src/Resources/assets/images/promo/jbl-speaker.png": {
-    "file": "assets/jbl-speaker-BAWcAQ42.png",
+    "file": "assets/jbl-speaker-BsqS5Wql.png",
     "src": "src/Resources/assets/images/promo/jbl-speaker.png"
   },
   "src/Resources/assets/images/services/customer-service.svg": {
@@ -80,13 +80,22 @@
     "file": "assets/money-back-Cj3vrIhB.svg",
     "src": "src/Resources/assets/images/services/money-back.svg"
   },
+  "src/Resources/assets/images/thank-you.png": {
+    "file": "assets/thank-you-mhMpuEVL.png",
+    "src": "src/Resources/assets/images/thank-you.png"
+  },
+  "src/Resources/assets/images/wishlist.png": {
+    "file": "assets/wishlist-DPRG46v-.png",
+    "src": "src/Resources/assets/images/wishlist.png"
+  },
   "src/Resources/assets/js/app.js": {
-    "file": "assets/app-DKcl2W7p.js",
+    "file": "assets/app-Dshoab2Z.js",
     "name": "app",
     "src": "src/Resources/assets/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-Cob2o8cJ.css"
+      "assets/app-BsM4JrO0.css",
+      "assets/app-B9DweljY.css"
     ]
   }
 }

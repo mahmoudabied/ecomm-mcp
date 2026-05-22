@@ -148,28 +148,28 @@
                     <input type="hidden" name="is_buy_now" v-model="is_buy_now" />
 
                     <div class="max-w-content mx-auto px-4">
-                        <div class="flex gap-[70px] py-10" style="flex-wrap: wrap;">
+                        <div class="flex flex-col lg:flex-row gap-8 lg:gap-[70px] py-6 md:py-10">
                             {{-- Left: Image Gallery --}}
                             <div class="w-full lg:w-[45%]">
-                                <div class="flex gap-4">
-                                    <div class="flex flex-col gap-3" ref="swiperContainer" style="max-height: 500px; overflow-y: auto;">
+                                <div class="flex flex-col-reverse md:flex-row gap-4">
+                                    <div class="flex md:flex-col gap-3 overflow-x-auto md:overflow-x-visible md:overflow-y-auto md:max-h-[500px]" ref="swiperContainer">
                                         <template v-for="(media, index) in [...galleryImages]">
                                             <img
                                                 :src="media.small_image_url"
                                                 :alt="'{{ $product->name }}'"
                                                 width="120"
                                                 height="120"
-                                                class="w-[120px] h-[120px] object-contain rounded cursor-pointer border p-2"
+                                                class="w-[80px] h-[80px] md:w-[120px] md:h-[120px] object-contain rounded cursor-pointer border p-2 shrink-0"
                                                 :class="activeIndex === index ? 'border-primary' : 'border-border-color'"
                                                 @click="changeMainImage(media, index)"
                                             />
                                         </template>
                                     </div>
-                                    <div class="flex-grow flex items-center justify-center bg-bg-secondary rounded" style="min-height: 500px;">
+                                    <div class="flex-grow flex items-center justify-center bg-bg-secondary rounded min-h-[300px] md:min-h-[500px]">
                                         <img
                                             :src="mainImage"
                                             :alt="'{{ $product->name }}'"
-                                            class="max-h-[450px] object-contain"
+                                            class="max-h-[280px] md:max-h-[450px] object-contain"
                                             v-if="mainImage"
                                         />
                                     </div>
@@ -228,7 +228,7 @@
                                 @include('shop::products.view.types.booking')
 
                                 {{-- Quantity + Buy Now --}}
-                                <div class="flex items-center gap-4 mt-6">
+                                <div class="flex flex-wrap items-center gap-4 mt-6">
                                     @if ($product->getTypeInstance()->showQuantityBox())
                                         <div class="flex items-center border border-border-color rounded">
                                             <button type="button" class="px-4 py-3 text-lg" @click="quantity > 1 && quantity--">-</button>

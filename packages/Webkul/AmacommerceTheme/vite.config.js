@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
 import laravel from "laravel-vite-plugin";
+import vue from "@vitejs/plugin-vue";
 
 export default defineConfig(({ mode }) => {
     const envDir = "../../../";
@@ -16,6 +17,7 @@ export default defineConfig(({ mode }) => {
             port: process.env.VITE_PORT || 5173,
         },
         plugins: [
+            vue(),
             laravel({
                 hotFile: "../../../public/amacommerce-theme-vite.hot",
                 publicDirectory: "../../../public",
@@ -42,6 +44,8 @@ export default defineConfig(({ mode }) => {
                     "src/Resources/assets/images/services/money-back.svg",
                     "src/Resources/assets/images/auth/shopping-side.png",
                     "src/Resources/assets/images/default-language.svg",
+                    "src/Resources/assets/images/thank-you.png",
+                    "src/Resources/assets/images/wishlist.png",
                 ],
                 refresh: true,
             }),

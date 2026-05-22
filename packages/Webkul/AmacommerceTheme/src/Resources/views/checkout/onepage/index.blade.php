@@ -81,14 +81,14 @@
         <script type="text/x-template" id="v-checkout-template">
             <template v-if="! cart">
                 <div class="animate-pulse py-8">
-                    <div class="flex gap-[170px] max-lg:flex-col max-lg:gap-8">
+                    <div class="flex flex-col lg:flex-row gap-8 lg:gap-12">
                         <div class="flex-1">
                             <div class="h-10 bg-bg-secondary rounded w-48 mb-10"></div>
                             <div class="grid gap-4">
                                 <div class="h-16 bg-bg-secondary rounded" v-for="i in 5"></div>
                             </div>
                         </div>
-                        <div class="w-[470px] max-w-full">
+                        <div class="w-full lg:w-[470px] shrink-0">
                             <div class="h-8 bg-bg-secondary rounded w-40 mb-6"></div>
                             <div class="grid gap-3">
                                 <div class="h-12 bg-bg-secondary rounded" v-for="i in 4"></div>
@@ -99,9 +99,9 @@
             </template>
 
             <template v-else>
-                <div class="flex gap-[170px] max-lg:flex-col max-lg:gap-8 pb-12">
+                <div class="flex flex-col lg:flex-row gap-8 lg:gap-12 pb-12">
                     <div class="flex-1" id="steps-container">
-                        <h2 class="text-4xl font-medium mb-10">Billing Details</h2>
+                        <h2 class="text-2xl md:text-4xl font-medium mb-8 md:mb-10">Billing Details</h2>
 
                         <template v-if="['address', 'shipping', 'payment', 'review'].includes(currentStep)">
                             @include('shop::checkout.onepage.address')
@@ -116,7 +116,7 @@
                         </template>
                     </div>
 
-                    <div class="w-[470px] max-w-full">
+                    <div class="w-full lg:w-[470px] shrink-0">
                         <h3 class="text-xl font-medium mb-6">Order Summary</h3>
 
                         <div v-for="item in cart.items" class="flex justify-between items-center py-3 border-b border-border-color">

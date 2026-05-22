@@ -10,7 +10,7 @@
         id="v-product-card-template"
     >
         <div class="w-full">
-            <div class="bg-bg-secondary h-[250px] rounded relative flex items-center justify-center group">
+            <div class="bg-bg-secondary h-[250px] rounded relative flex items-center justify-center group overflow-hidden">
                 <span
                     v-if="product.special_price"
                     class="absolute top-3 left-3 bg-primary text-white text-xs px-3 py-1 rounded"
@@ -51,7 +51,7 @@
 
                 @if (core()->getConfigData('sales.checkout.shopping_cart.cart_page'))
                     <div
-                        class="absolute bottom-0 left-0 right-0 bg-black text-white text-center py-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        class="absolute bottom-0 left-0 right-0 bg-black text-white text-center py-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-b"
                         @click="addToCart()"
                     >
                         Add To Cart

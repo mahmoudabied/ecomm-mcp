@@ -75,16 +75,24 @@
                     </template>
 
                     <template v-else>
-                        <div class="m-auto grid w-full place-content-center items-center justify-items-center py-32 text-center">
+                        <div class="flex flex-col items-center justify-center py-20 md:py-32 text-center">
                             <img
-                                class="max-md:h-[100px] max-md:w-[100px]"
+                                class="w-[120px] h-[120px] md:w-[180px] md:h-[180px] opacity-60"
                                 src="{{ bagisto_asset('images/wishlist.png') }}"
                                 alt="Empty wishlist"
                             >
 
-                            <p class="text-xl max-md:text-sm" role="heading">
+                            <h3 class="text-2xl md:text-3xl font-semibold mt-8" role="heading">
                                 @lang('shop::app.customers.account.wishlist.empty')
-                            </p>
+                            </h3>
+                            <p class="text-text-secondary mt-2 text-sm md:text-base">Browse our products and add items you love.</p>
+
+                            <a
+                                href="{{ route('shop.home.index') }}"
+                                class="mt-8 inline-block bg-primary text-white px-12 py-4 rounded text-base font-medium hover:bg-primary-hover transition"
+                            >
+                                Start Shopping
+                            </a>
                         </div>
                     </template>
                 </template>
@@ -97,8 +105,8 @@
             type="text/x-template"
             id="v-wishlist-card-template"
         >
-            <div class="w-full max-w-[270px]">
-                <div class="bg-bg-secondary h-[250px] rounded relative flex items-center justify-center group">
+            <div class="w-full">
+                <div class="bg-bg-secondary h-[250px] rounded relative flex items-center justify-center group overflow-hidden">
                     <button
                         class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow hover:bg-gray-100 z-10"
                         @click="remove"
@@ -111,7 +119,7 @@
 
                     @if (core()->getConfigData('sales.checkout.shopping_cart.cart_page'))
                         <div
-                            class="absolute bottom-0 left-0 right-0 bg-black text-white text-center py-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10"
+                            class="absolute bottom-0 left-0 right-0 bg-black text-white text-center py-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10 rounded-b"
                             @click="moveToCart"
                         >
                             Add To Cart

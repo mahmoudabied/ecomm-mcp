@@ -8,14 +8,14 @@
     </x-slot>
 
     <div class="max-w-content mx-auto px-4 py-20">
-        <nav class="text-sm text-text-secondary mb-20">
-            <a href="{{ route('shop.home.index') }}">Home</a> / <span>404 Error</span>
+        <nav class="text-sm text-text-secondary mb-12 md:mb-20">
+            <a href="{{ route('shop.home.index') }}" class="hover:text-primary">Home</a> / <span>{{ $errorCode }} Error</span>
         </nav>
 
         <div class="text-center">
-            <h1 class="text-[110px] font-medium leading-none mb-10">404 Not Found</h1>
+            <h1 class="text-[60px] md:text-[110px] font-medium leading-none mb-6 md:mb-10">{{ $errorCode }} Not Found</h1>
 
-            <p class="text-base text-text-secondary mb-20">
+            <p class="text-sm md:text-base text-text-secondary mb-12 md:mb-20 max-w-lg mx-auto">
                 @if ($errorCode === 503 && core()->getCurrentChannel()->maintenance_mode_text != "")
                     {{ core()->getCurrentChannel()->maintenance_mode_text }}
                 @else

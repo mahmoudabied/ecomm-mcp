@@ -35,7 +35,7 @@
             <div class="flex-1 overflow-y-auto">
                 <nav class="py-4">
                     <a href="{{ route('shop.home.index') }}" class="block px-6 py-3 text-base hover:bg-bg-secondary transition">Home</a>
-                    <a href="{{ route('shop.home.contact_us.index') }}" class="block px-6 py-3 text-base hover:bg-bg-secondary transition">Contact</a>
+                    <a href="{{ route('shop.home.contact_us') }}" class="block px-6 py-3 text-base hover:bg-bg-secondary transition">Contact</a>
                     <a href="{{ route('shop.cms.page', 'about-us') }}" class="block px-6 py-3 text-base hover:bg-bg-secondary transition">About</a>
 
                     @auth('customer')
