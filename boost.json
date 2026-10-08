@@ -17,6 +17,8 @@
         "mcp-development",
         "socialite-development",
         "pest-testing",
-        "laravel-multitenancy-development"
+        "laravel-multitenancy-development",
+        "bagisto-coding-standards",
+        "bagisto-package-development"
     ]
 }

@@ -30,6 +30,15 @@
         <testsuite name="McpServer Feature Test">
             <directory suffix="Test.php">packages/Webkul/McpServer/tests/Feature</directory>
         </testsuite>
+
+        <!-- MarketingAutomation package testsuites. -->
+        <testsuite name="MarketingAutomation Feature Test">
+            <directory suffix="Test.php">packages/Webkul/MarketingAutomation/tests/Feature</directory>
+        </testsuite>
+
+        <testsuite name="MarketingAutomation Unit Test">
+            <directory suffix="Test.php">packages/Webkul/MarketingAutomation/tests/Unit</directory>
+        </testsuite>
     </testsuites>
 
     <source>

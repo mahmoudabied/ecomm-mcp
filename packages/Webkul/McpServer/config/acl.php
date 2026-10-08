@@ -1,30 +1,25 @@
 <?php
 
 return [
-
-    'mcp' => [
-        'admin' => [
-            'inventory' => [
-                'update' => [
-                    'title'      => 'MCP - Update Inventory',
-                    'sort'       => 1,
-                ],
-            ],
-
-            'sales' => [
-                'analytics' => [
-                    'title'      => 'MCP - Sales Analytics',
-                    'sort'       => 2,
-                ],
-            ],
-
-            'customers' => [
-                'manage' => [
-                    'title'      => 'MCP - Manage Customers',
-                    'sort'       => 3,
-                ],
-            ],
-        ],
+    [
+        'key'   => 'mcp',
+        'name'  => 'MCP',
+        'route' => 'dashboard',
+        'sort'  => 100,
+    ], [
+        'key'   => 'mcp.admin.inventory.update',
+        'name'  => 'MCP - Update Inventory',
+        'route' => 'dashboard',
+        'sort'  => 1,
+    ], [
+        'key'   => 'mcp.admin.sales.analytics',
+        'name'  => 'MCP - Sales Analytics',
+        'route' => 'dashboard',
+        'sort'  => 2,
+    ], [
+        'key'   => 'mcp.admin.customers.manage',
+        'name'  => 'MCP - Manage Customers',
+        'route' => 'dashboard',
+        'sort'  => 3,
     ],
-
 ];
