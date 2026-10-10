@@ -14,7 +14,7 @@ class HealthCheck
     /**
      * Build the setup health report for the admin.
      *
-     * @return array{queue_driver: string, queue_ok: bool, scheduler_last_seen_at: ?string, scheduler_ok: bool, mail_configured: bool}
+     * @return array{queue_driver: string, queue_ok: bool, scheduler_last_seen_at: ?string, scheduler_ok: bool, mail_configured: bool, lag_over_5m_ratio: float}
      */
     public function report(): array
     {
@@ -26,6 +26,7 @@ class HealthCheck
             'scheduler_last_seen_at' => $lastSeenAt ? (string) $lastSeenAt : null,
             'scheduler_ok'           => $this->schedulerOk($lastSeenAt),
             'mail_configured'        => ! in_array(config('mail.default'), ['log', 'array']),
+            'lag_over_5m_ratio'      => $this->lagOver5mRatio(),
         ];
     }
 
@@ -44,5 +45,19 @@ class HealthCheck
     {
         return $lastSeenAt !== null
             && now()->diffInMinutes($lastSeenAt) < 5;
+    }
+
+    /**
+     * The share of dispatches that ran more than five minutes late.
+     */
+    protected function lagOver5mRatio(): float
+    {
+        $total = (int) Cache::get('marketing_automation.lag.total', 0);
+
+        if ($total === 0) {
+            return 0.0;
+        }
+
+        return (int) Cache::get('marketing_automation.lag.over_5m', 0) / $total;
     }
 }

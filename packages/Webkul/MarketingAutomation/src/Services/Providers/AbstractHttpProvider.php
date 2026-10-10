@@ -7,12 +7,14 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Throwable;
+use Webkul\MarketingAutomation\Contracts\Providers\MessagingProvider;
 use Webkul\MarketingAutomation\DTOs\OutboundMessage;
 use Webkul\MarketingAutomation\DTOs\SendResult;
 use Webkul\MarketingAutomation\DTOs\StatusUpdate;
 use Webkul\MarketingAutomation\Models\ProviderConnection;
 
-abstract class AbstractHttpProvider
+abstract class AbstractHttpProvider implements MessagingProvider
 {
     /**
      * Send the message through the vendor API.

@@ -12,9 +12,10 @@ use Webkul\MarketingAutomation\Services\Providers\VonageSmsProvider;
 return [
     'drivers' => [
         'twilio' => [
-            'class'   => TwilioSmsProvider::class,
-            'channel' => 'sms',
-            'label'   => 'Twilio',
+            'class'        => TwilioSmsProvider::class,
+            'channel'      => 'sms',
+            'label'        => 'Twilio',
+            'webhook_auth' => 'signature',
         ],
 
         'vonage' => [
@@ -48,15 +49,17 @@ return [
         ],
 
         'meta_cloud' => [
-            'class'   => MetaCloudWhatsAppProvider::class,
-            'channel' => 'whatsapp',
-            'label'   => 'Meta WhatsApp Cloud',
+            'class'        => MetaCloudWhatsAppProvider::class,
+            'channel'      => 'whatsapp',
+            'label'        => 'Meta WhatsApp Cloud',
+            'webhook_auth' => 'signature',
         ],
 
         'twilio_whatsapp' => [
-            'class'   => TwilioWhatsAppProvider::class,
-            'channel' => 'whatsapp',
-            'label'   => 'Twilio WhatsApp',
+            'class'        => TwilioWhatsAppProvider::class,
+            'channel'      => 'whatsapp',
+            'label'        => 'Twilio WhatsApp',
+            'webhook_auth' => 'signature',
         ],
     ],
 ];

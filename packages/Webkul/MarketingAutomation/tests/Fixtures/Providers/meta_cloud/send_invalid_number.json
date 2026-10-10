@@ -1,0 +1,1 @@
+{"error":{"message":"(#131030) Recipient phone number not in allowed list","type":"OAuthException","code":131030,"error_data":{"messaging_product":"whatsapp","details":"Recipient phone number not in allowed list"},"fbtrace_id":"A1b2C3d4E5f7"}}

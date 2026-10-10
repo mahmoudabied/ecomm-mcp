@@ -37,6 +37,22 @@ it('shows the health page with the queue warning to an admin', function () {
         ->assertSeeText(trans('marketing_automation::app.health.warning'));
 });
 
+it('shows the SMTP hint only when the mail check fails', function () {
+    $this->loginAsAdmin();
+
+    config(['mail.default' => 'log']);
+
+    $this->get(route('admin.marketing.automation.health.index'))
+        ->assertOk()
+        ->assertSeeText(trans('marketing_automation::app.health.mail-hint'));
+
+    config(['mail.default' => 'smtp']);
+
+    $this->get(route('admin.marketing.automation.health.index'))
+        ->assertOk()
+        ->assertDontSeeText(trans('marketing_automation::app.health.mail-hint'));
+});
+
 it('forbids admins without the settings permission', function () {
     $this->loginAsAdmin();
 

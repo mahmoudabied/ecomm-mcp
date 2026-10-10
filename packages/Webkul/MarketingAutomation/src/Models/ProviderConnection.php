@@ -59,6 +59,14 @@ class ProviderConnection extends Model implements ProviderConnectionContract
     }
 
     /**
+     * Get the WhatsApp templates synced for this connection.
+     */
+    public function templates()
+    {
+        return $this->hasMany(WhatsAppTemplateProxy::modelClass());
+    }
+
+    /**
      * Create a new factory instance for the model.
      */
     protected static function newFactory(): Factory

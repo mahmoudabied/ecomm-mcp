@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 use Webkul\MarketingAutomation\Contracts\EnrolmentEvent as EnrolmentEventContract;
 use Webkul\MarketingAutomation\Database\Factories\EnrolmentEventFactory;
 use Webkul\MarketingAutomation\Enums\JourneyEvent;
-use Webkul\MarketingAutomation\Enums\SkipReason;
 
 class EnrolmentEvent extends Model implements EnrolmentEventContract
 {
@@ -42,7 +41,6 @@ class EnrolmentEvent extends Model implements EnrolmentEventContract
     {
         return [
             'event'      => JourneyEvent::class,
-            'reason'     => SkipReason::class,
             'meta'       => 'array',
             'created_at' => 'datetime',
         ];

@@ -23,7 +23,7 @@ return [
     ], [
         'key'   => 'marketing.automation.flows.manage',
         'name'  => 'marketing_automation::app.acl.flows-manage',
-        'route' => 'admin.marketing.automation.flows.index',
+        'route' => 'admin.marketing.automation.flows.store',
         'sort'  => 2,
     ], [
         'key'   => 'marketing.automation.reports',

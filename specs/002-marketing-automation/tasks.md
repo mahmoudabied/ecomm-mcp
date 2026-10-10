@@ -243,15 +243,15 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Tests for US3 (write first, expect them to fail)
 
-- [ ] T036 [P] [US3] Create HTTP fixtures under `packages/Webkul/MarketingAutomation/tests/Fixtures/Providers/{driver}/` for all 8 drivers: `send_success.json`, `send_auth_error.json`, `send_invalid_number.json`, `send_rate_limited.json` (body plus a status code noted in the filename suffix or a sibling `.status` file, your choice, but be consistent), and for `meta_cloud` and `twilio_whatsapp` also `templates.json`. Also add `meta_cloud/send_outside_window.json` (`{"error":{"message":"(#131047) Re-engagement message","code":131047}}`, HTTP 400). Use realistic shapes from each vendor's public docs (e.g. Twilio success `{"sid":"SM123","status":"queued"}`, auth error `{"code":20003,"message":"Authenticate"}` with HTTP 401; Meta success `{"messages":[{"id":"wamid.X"}]}`, error `{"error":{"message":"(#131030) Recipient phone number not in allowed list","code":131030}}` with HTTP 400).
-- [ ] T037 [P] [US3] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/ProviderDriversTest.php`. For each driver (Pest dataset of the 8 keys), with `Http::fake()` using the fixtures:
+- [X] T036 [P] [US3] Create HTTP fixtures under `packages/Webkul/MarketingAutomation/tests/Fixtures/Providers/{driver}/` for all 8 drivers: `send_success.json`, `send_auth_error.json`, `send_invalid_number.json`, `send_rate_limited.json` (body plus a status code noted in the filename suffix or a sibling `.status` file, your choice, but be consistent), and for `meta_cloud` and `twilio_whatsapp` also `templates.json`. Also add `meta_cloud/send_outside_window.json` (`{"error":{"message":"(#131047) Re-engagement message","code":131047}}`, HTTP 400). Use realistic shapes from each vendor's public docs (e.g. Twilio success `{"sid":"SM123","status":"queued"}`, auth error `{"code":20003,"message":"Authenticate"}` with HTTP 401; Meta success `{"messages":[{"id":"wamid.X"}]}`, error `{"error":{"message":"(#131030) Recipient phone number not in allowed list","code":131030}}` with HTTP 400).
+- [X] T037 [P] [US3] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/ProviderDriversTest.php`. For each driver (Pest dataset of the 8 keys), with `Http::fake()` using the fixtures:
   - success → `SendStatus::Accepted` with a non-empty provider id
   - auth error → `PermanentError` with a non-empty message
   - 429 → `RetryableError`
   - `ConnectionException` (`Http::fake(fn () => throw new ConnectionException())`) → `RetryableError`
   - Assert the request URL, auth header and body fields per `contracts/provider-driver.md` § Launch drivers using `Http::assertSent`.
   - meta_cloud: the outside-window fixture → `PermanentError`; `testConnection()` posts `type: template` with `template.name = hello_world` (check with `Http::assertSent`). twilio_whatsapp: `testConnection()` with no synced templates → `PermanentError` code `no_template`.
-- [ ] T038 [P] [US3] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Admin/ProviderManagementTest.php` (admin with all permissions via `loginAsAdmin()`):
+- [X] T038 [P] [US3] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Admin/ProviderManagementTest.php` (admin with all permissions via `loginAsAdmin()`):
   - POST `admin.marketing.automation.providers.store` creates a connection with status `untested`.
   - GET show returns credentials masked as `••••` + last 4 chars and never the full secret (`assertDontSee`).
   - PUT with an empty secret keeps the old secret.
@@ -263,18 +263,18 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Implementation for US3
 
-- [ ] T039 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/TwilioSmsProvider.php` (extends AbstractHttpProvider, implements SupportsInboundOptOut).
+- [X] T039 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/TwilioSmsProvider.php` (extends AbstractHttpProvider, implements SupportsInboundOptOut).
   - `fields()`: account_sid (text), auth_token (password, secret), messaging_service_sid (text, optional).
   - `send`: POST form `https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json` with basic auth (sid, token), `To`, `Body`, `MessagingServiceSid` or `From` = `$connection->sender`, and `StatusCallback` = `$message->statusCallbackUrl`. The id comes from `sid`; the error from `[code, message]`.
   - `verifyWebhook`: validate `X-Twilio-Signature` = base64(HMAC-SHA1(auth_token, full URL + sorted POST params concatenated key.value)).
   - `parseStatusWebhook`: map `MessageStatus` (queued/sent → sent, delivered → delivered, read → read, failed/undelivered → failed) with `MessageSid`, `ErrorCode`.
   - `parseInbound`: when `Body` is present, return `InboundMessage(From, Body)`.
-- [ ] T040 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/VonageSmsProvider.php`: fields api_key, api_secret (secret). Send: POST JSON `https://rest.nexmo.com/sms/json` `{api_key, api_secret, from: sender, to: E.164 without '+', text, callback, type: 'unicode'}`. Success when `messages[0].status == "0"` (id `messages[0]['message-id']`). Status `"1"` (throttled) → retryable; others → permanent with `error-text`. Status webhook: `messageId`, `status` (delivered/failed/rejected/expired). Inbound: `msisdn`, `text`.
-- [ ] T041 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/MessageBirdSmsProvider.php`: fields access_key (secret). Send: POST `https://rest.messagebird.com/messages` header `Authorization: AccessKey {key}`, JSON `{originator: sender, recipients: [E.164 without '+'], body, reportUrl, datacoding: 'auto'}`. The id is `id`; errors are `errors[0].code/description`. Status webhook: query params `id`, `status`. Inbound: `originator`, `body`.
-- [ ] T042 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/UnifonicSmsProvider.php`: fields app_sid (secret). Send: POST form `https://el.cloud.unifonic.com/rest/SMS/messages` `{AppSid, SenderID: sender, Recipient: E.164 without '+', Body, CorrelationID: messageUuid}`. Success when `success == true`; the id is `data.MessageID`; errors are `errorCode/message`. Inbound is not supported (don't implement SupportsInboundOptOut).
-- [ ] T043 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/MsegatSmsProvider.php`: fields username, api_key (secret). Send: POST JSON `https://www.msegat.com/gw/sendsms.php` `{userName, apiKey, numbers: E.164 without '+', userSender: sender, msg, msgEncoding: 'UTF8'}`. Success when `code` is `"1"` or `"M0000"`; the id is the `messageId` field, or the messageUuid if absent. Any other code → permanent with `message`.
-- [ ] T044 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/TaqnyatSmsProvider.php`: fields bearer_token (secret). Send: POST JSON `https://api.taqnyat.sa/v1/messages` header `Authorization: Bearer {token}`, body `{recipients: [E.164 without '+'], body, sender}`. Success when `statusCode == 201`; the id is `messageId`; others → classify by HTTP status, with the message from `message`.
-- [ ] T045 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/MetaCloudWhatsAppProvider.php` (implements WhatsAppTemplateSource, SupportsInboundOptOut).
+- [X] T040 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/VonageSmsProvider.php`: fields api_key, api_secret (secret). Send: POST JSON `https://rest.nexmo.com/sms/json` `{api_key, api_secret, from: sender, to: E.164 without '+', text, callback, type: 'unicode'}`. Success when `messages[0].status == "0"` (id `messages[0]['message-id']`). Status `"1"` (throttled) → retryable; others → permanent with `error-text`. Status webhook: `messageId`, `status` (delivered/failed/rejected/expired). Inbound: `msisdn`, `text`.
+- [X] T041 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/MessageBirdSmsProvider.php`: fields access_key (secret). Send: POST `https://rest.messagebird.com/messages` header `Authorization: AccessKey {key}`, JSON `{originator: sender, recipients: [E.164 without '+'], body, reportUrl, datacoding: 'auto'}`. The id is `id`; errors are `errors[0].code/description`. Status webhook: query params `id`, `status`. Inbound: `originator`, `body`.
+- [X] T042 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/UnifonicSmsProvider.php`: fields app_sid (secret). Send: POST form `https://el.cloud.unifonic.com/rest/SMS/messages` `{AppSid, SenderID: sender, Recipient: E.164 without '+', Body, CorrelationID: messageUuid}`. Success when `success == true`; the id is `data.MessageID`; errors are `errorCode/message`. Inbound is not supported (don't implement SupportsInboundOptOut).
+- [X] T043 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/MsegatSmsProvider.php`: fields username, api_key (secret). Send: POST JSON `https://www.msegat.com/gw/sendsms.php` `{userName, apiKey, numbers: E.164 without '+', userSender: sender, msg, msgEncoding: 'UTF8'}`. Success when `code` is `"1"` or `"M0000"`; the id is the `messageId` field, or the messageUuid if absent. Any other code → permanent with `message`.
+- [X] T044 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/TaqnyatSmsProvider.php`: fields bearer_token (secret). Send: POST JSON `https://api.taqnyat.sa/v1/messages` header `Authorization: Bearer {token}`, body `{recipients: [E.164 without '+'], body, sender}`. Success when `statusCode == 201`; the id is `messageId`; others → classify by HTTP status, with the message from `message`.
+- [X] T045 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/MetaCloudWhatsAppProvider.php` (implements WhatsAppTemplateSource, SupportsInboundOptOut).
   - fields: access_token (secret), phone_number_id, waba_id, app_secret (secret).
   - `send`: POST `https://graph.facebook.com/v21.0/{phone_number_id}/messages` with bearer token. Body: `{messaging_product: 'whatsapp', to: E.164 without '+', type: 'template', template: {name, language: {code}, components: [{type: 'body', parameters: [{type: 'text', text: p}...]}, buttons...]}}`. If `$message->template` is null and body is set, send `type: 'text'`.
   - The id is `messages[0].id`. Errors: `error.code` 131030/131026/132000-series/100 → permanent; 4/80007/130429 (rate limit) → retryable.
@@ -283,21 +283,21 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - `verifyWebhook`: `X-Hub-Signature-256` = `sha256=` + HMAC-SHA256(app_secret, raw body).
   - `parseStatusWebhook`: `entry[].changes[].value.statuses[]` → StatusUpdate(id, status, errors[0]).
   - `parseInbound`: `value.messages[]` with `text.body` or `button.text`.
-- [ ] T046 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/TwilioWhatsAppProvider.php` (implements WhatsAppTemplateSource, SupportsInboundOptOut).
+- [X] T046 [P] [US3] `packages/Webkul/MarketingAutomation/src/Services/Providers/TwilioWhatsAppProvider.php` (implements WhatsAppTemplateSource, SupportsInboundOptOut).
   - fields: account_sid, auth_token (secret), and `from` held in `$connection->sender` (`whatsapp:+…`).
   - `send`: the Twilio Messages endpoint with `To: 'whatsapp:+…'`, `From: sender`, `ContentSid: template->name` (we store the Content SID as the template `external_id` and `name`), `ContentVariables: json_encode(['1' => p1, ...])`.
   - `testConnection()` override: send the first `approved` synced template of this connection. If none has been synced, return `SendResult::permanent('no_template', trans('marketing_automation::app.providers.sync-templates-first'))`.
   - `fetchTemplates`: GET `https://content.twilio.com/v1/ContentAndApprovals?PageSize=100`, mapping `approval_requests.whatsapp.status` (approved → approved) and `language`.
   - Signature, status and inbound handling are the same as T039. Extract the shared Twilio logic into a trait `packages/Webkul/MarketingAutomation/src/Services/Providers/Concerns/TwilioCommon.php`.
-- [ ] T047 [US3] Create `packages/Webkul/MarketingAutomation/src/Repositories/ProviderConnectionRepository.php` methods:
+- [X] T047 [US3] Create `packages/Webkul/MarketingAutomation/src/Repositories/ProviderConnectionRepository.php` methods:
   - `maskedCredentials(ProviderConnection $c): array` (secret fields from `fields()` → `'••••'.substr($v, -4)`, non-secret fields as-is)
   - `updateWithSecrets(ProviderConnection $c, array $data): ProviderConnection` (empty secret inputs keep existing values)
   - `setDefault(int $channelId, MessageChannel $ch, int $connectionId): void` (upsert)
-- [ ] T048 [US3] Create Form Requests `packages/Webkul/MarketingAutomation/src/Http/Requests/ProviderConnectionRequest.php`. Rules: `name` required string max:100; `message_channel` in sms,whatsapp; `driver` in keys of config `automation-providers.drivers` whose channel matches; `sender` required string max:50; `credentials` array, where each `required` non-secret field is required, and secret fields are required on create only. Also `ProviderTestRequest.php` (`to` required string max:30) and `ProviderDefaultRequest.php` (`channel_id` exists:channels,id; `message_channel`; `provider_connection_id` exists:automation_provider_connections,id).
-- [ ] T049 [US3] Create `packages/Webkul/MarketingAutomation/src/Jobs/SyncWhatsAppTemplates.php` (ShouldQueue, queue `automation`). For a connection whose driver implements WhatsAppTemplateSource it calls `fetchTemplates`, upserts `automation_whatsapp_templates` by `(provider_connection_id, name, language)`, and marks rows absent from the response as `disabled`. The controller runs it with `dispatchSync` so the response can return the list.
-- [ ] T050 [US3] Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Admin/ProviderController.php` with actions `index` (DataGrid via `ProviderDataGrid` for AJAX, else view), `store`, `show` (JSON with masked credentials + `webhook_url` = `route('automation.webhooks.receive', [$c->driver, $c->uuid])` + `?s=`secret for regional drivers), `update`, `destroy` (422 with message when used as a default by an active flow's channel), `test` (calls `ProviderManager::driver($c)->testConnection($c, PhoneNormalizer::normalize($to))`, updates `status/last_error/last_tested_at`, returns 200 or 422 `{message}`), `syncTemplates`, `updateDefaults`. Every action checks `bouncer()->hasPermission('marketing.automation.settings')`. JSON response shape: `{message, data}` (contracts/admin-http.md).
-- [ ] T051 [US3] Add routes to `packages/Webkul/MarketingAutomation/src/Routes/admin-routes.php` under `Route::prefix('marketing/automation')`, named exactly as in `contracts/admin-http.md` § Providers: `admin.marketing.automation.providers.index|store|show|update|delete|test|sync_templates|defaults`.
-- [ ] T052 [US3] Create `packages/Webkul/MarketingAutomation/src/DataGrids/ProviderDataGrid.php` with columns name, message_channel, driver, sender, status (badge), last_tested_at, and actions edit/delete. Create the view `packages/Webkul/MarketingAutomation/src/Resources/views/admin/providers/index.blade.php`, mirroring the events index page:
+- [X] T048 [US3] Create Form Requests `packages/Webkul/MarketingAutomation/src/Http/Requests/ProviderConnectionRequest.php`. Rules: `name` required string max:100; `message_channel` in sms,whatsapp; `driver` in keys of config `automation-providers.drivers` whose channel matches; `sender` required string max:50; `credentials` array, where each `required` non-secret field is required, and secret fields are required on create only. Also `ProviderTestRequest.php` (`to` required string max:30) and `ProviderDefaultRequest.php` (`channel_id` exists:channels,id; `message_channel`; `provider_connection_id` exists:automation_provider_connections,id).
+- [X] T049 [US3] Create `packages/Webkul/MarketingAutomation/src/Jobs/SyncWhatsAppTemplates.php` (ShouldQueue, queue `automation`). For a connection whose driver implements WhatsAppTemplateSource it calls `fetchTemplates`, upserts `automation_whatsapp_templates` by `(provider_connection_id, name, language)`, and marks rows absent from the response as `disabled`. The controller runs it with `dispatchSync` so the response can return the list.
+- [X] T050 [US3] Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Admin/ProviderController.php` with actions `index` (DataGrid via `ProviderDataGrid` for AJAX, else view), `store`, `show` (JSON with masked credentials + `webhook_url` = `route('automation.webhooks.receive', [$c->driver, $c->uuid])` + `?s=`secret for regional drivers), `update`, `destroy` (422 with message when used as a default by an active flow's channel), `test` (calls `ProviderManager::driver($c)->testConnection($c, PhoneNormalizer::normalize($to))`, updates `status/last_error/last_tested_at`, returns 200 or 422 `{message}`), `syncTemplates`, `updateDefaults`. Every action checks `bouncer()->hasPermission('marketing.automation.settings')`. JSON response shape: `{message, data}` (contracts/admin-http.md).
+- [X] T051 [US3] Add routes to `packages/Webkul/MarketingAutomation/src/Routes/admin-routes.php` under `Route::prefix('marketing/automation')`, named exactly as in `contracts/admin-http.md` § Providers: `admin.marketing.automation.providers.index|store|show|update|delete|test|sync_templates|defaults`.
+- [X] T052 [US3] Create `packages/Webkul/MarketingAutomation/src/DataGrids/ProviderDataGrid.php` with columns name, message_channel, driver, sender, status (badge), last_tested_at, and actions edit/delete. Create the view `packages/Webkul/MarketingAutomation/src/Resources/views/admin/providers/index.blade.php`, mirroring the events index page:
   - `<x-admin::datagrid>`
   - a "Create provider" modal (Vue inline component `v-provider-form`) whose fields render dynamically from `drivers` passed by the controller (`ProviderManager::driversFor()` for sms and whatsapp), with `password` inputs for secret fields
   - a "Test connection" button that prompts for a phone and POSTs to the test route, showing a success or error flash
@@ -306,7 +306,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - a "Health" tab linking to `admin.marketing.automation.health.index` (there's no separate menu entry, see T031)
 
   All strings are translated.
-- [ ] T053 [US3] Run `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/ProviderDriversTest.php packages/Webkul/MarketingAutomation/tests/Feature/Admin/ProviderManagementTest.php` and fix until green. Run pint.
+- [X] T053 [US3] Run `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/ProviderDriversTest.php packages/Webkul/MarketingAutomation/tests/Feature/Admin/ProviderManagementTest.php` and fix until green. Run pint.
 
 **Checkpoint**: US3 is independently demoable (quickstart step 1).
 
@@ -319,7 +319,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Tests for US2 (write first)
 
-- [ ] T054 [P] [US2] Unit test `packages/Webkul/MarketingAutomation/tests/Feature/Engine/FlowValidatorTest.php`. The validator returns an `errors` array keyed `steps.<key>`, or a top-level `trigger`/`steps` key. Cases:
+- [X] T054 [P] [US2] Unit test `packages/Webkul/MarketingAutomation/tests/Feature/Engine/FlowValidatorTest.php`. The validator returns an `errors` array keyed `steps.<key>`, or a top-level `trigger`/`steps` key. Cases:
   - no send step → error
   - a `next` pointing to a missing key → error
   - a cycle without a wait step → error
@@ -327,7 +327,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - an SMS step with no default SMS provider for one of the flow's sales channels → error
   - a transactional flow containing a `coupon` or `product_grid` block → error
   - a valid graph → `[]`
-- [ ] T055 [P] [US2] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Engine/EnrolmentTest.php`:
+- [X] T055 [P] [US2] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Engine/EnrolmentTest.php`:
   - an active flow enrols a matching TriggerEvent
   - a duplicate `trigger_key` → still one enrolment
   - a second event within the `reentry_window_hours` with a different trigger_key → not enrolled; after the window (travelTo) → enrolled
@@ -335,7 +335,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - a flow not scoped to the event's channel → not enrolled
   - routing set to `disabled` or `klaviyo` for the flow's template_key → not enrolled
   - events that happened before activation are not enrolled (no retroactive enrolment)
-- [ ] T056 [P] [US2] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Engine/StepRunnerTest.php`, using the sync queue and `Mail::fake()` and `Http::fake()` with the twilio/meta fixtures:
+- [X] T056 [P] [US2] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Engine/StepRunnerTest.php`, using the sync queue and `Mail::fake()` and `Http::fake()` with the twilio/meta fixtures:
   - email → wait 60 min → sms: after enrolment the email is sent and `next_run_at` = +60 min; `automation:dispatch-due` before that sends nothing; after travelTo +61 min the SMS is sent and the enrolment ends `completed`
   - a condition step takes the yes/no branch based on current data (order count)
   - no SMS consent on a marketing flow → `skipped` journey event with reason `no_consent` and the flow continues
@@ -346,13 +346,13 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - a transactional flow sends without marketing consent
   - an exit step → `completed`
   - with `marketing_automation.email.sender.sender_address` set for the channel, the sent mail's From address equals it; when unset, it equals `config('mail.from.address')` (FR-013)
-- [ ] T057 [P] [US2] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Engine/FlowLifecycleTest.php`:
+- [X] T057 [P] [US2] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Engine/FlowLifecycleTest.php`:
   - pause → `automation:dispatch-due` sends nothing for due enrolments
   - resume at < 24 h overdue → sent; resume at > 24 h overdue → that step gets `skipped` reason `expired` and the flow moves to the next step
   - editing an active flow's draft and re-activating → version 2; existing enrolments keep `flow_version_id` = v1, and new ones get v2 (FR-007)
   - duplicate creates a draft copy named "<name> (copy)"
   - delete cancels active enrolments with `exit_reason=flow_deleted`
-- [ ] T058 [P] [US2] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Engine/TriggersTest.php`. For each trigger, fire the real Bagisto event or run the scan command and assert one enrolment with the expected `trigger_key`:
+- [X] T058 [P] [US2] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Engine/TriggersTest.php`. For each trigger, fire the real Bagisto event or run the scan command and assert one enrolment with the expected `trigger_key`:
   - `customer.registration.after` → `customer:{id}`
   - `customer.subscription.after` → `subscribe:{subscriber_id}`
   - `checkout.order.save.after` → `order:{id}`
@@ -364,7 +364,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - birthday: `date_of_birth` = today in channel tz → `birthday:{customer_id}:{year}`
 
   Use factories from Bagisto (`Webkul\Sales\Models\Order::factory()` etc.); read `packages/Webkul/Shop/tests/Feature/Checkout` for how orders are created in tests.
-- [ ] T059 [P] [US2] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Admin/FlowManagementTest.php`:
+- [X] T059 [P] [US2] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Admin/FlowManagementTest.php`:
   - CRUD routes from `contracts/admin-http.md` § Flows return the documented shapes
   - activate with an invalid definition returns 422 with `errors.steps.*`
   - send test: `POST .flows.test` with an email recipient sends 1 mail (`Mail::fake`) and creates a MessageLog with `is_test = true` and `enrolment_id` null; a phone recipient on an SMS step sends via the faked provider
@@ -372,9 +372,9 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Implementation for US2 — engine
 
-- [ ] T060 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/FlowDefinition.php`, a value object wrapping the definition array (`{entry: string, steps: array<string, array>}`) with `entry(): string`, `step(string $key): array` (throws if missing), `keys(): array`, `nextOf(string $key, ?bool $branch = null): ?string` (for a condition: `yes` when branch is true, else `no`; otherwise `next`) and `hash(): string` (sha256 of the canonical json_encode with keys sorted recursively). Step keys must match `/^s\d+$/`.
-- [ ] T061 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/FlowValidator.php` with `validate(Flow $flow, array $definition): array<string, array<int, string>>` implementing every rule in data-model.md § Activation validation, plus the cases in T054. Cycle detection: DFS over next/yes/no edges, where a cycle is allowed only if it contains at least one `wait` step. Error messages use trans keys `marketing_automation::app.flows.validation.*`.
-- [ ] T062 [US2] Create `packages/Webkul/MarketingAutomation/src/Repositories/FlowRepository.php` methods:
+- [X] T060 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/FlowDefinition.php`, a value object wrapping the definition array (`{entry: string, steps: array<string, array>}`) with `entry(): string`, `step(string $key): array` (throws if missing), `keys(): array`, `nextOf(string $key, ?bool $branch = null): ?string` (for a condition: `yes` when branch is true, else `no`; otherwise `next`) and `hash(): string` (sha256 of the canonical json_encode with keys sorted recursively). Step keys must match `/^s\d+$/`.
+- [X] T061 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/FlowValidator.php` with `validate(Flow $flow, array $definition): array<string, array<int, string>>` implementing every rule in data-model.md § Activation validation, plus the cases in T054. Cycle detection: DFS over next/yes/no edges, where a cycle is allowed only if it contains at least one `wait` step. Error messages use trans keys `marketing_automation::app.flows.validation.*`.
+- [X] T062 [US2] Create `packages/Webkul/MarketingAutomation/src/Repositories/FlowRepository.php` methods:
   - `activate(Flow $f): FlowVersion` validates, throws `ValidationException::withMessages($errors)` if invalid, creates a FlowVersion with `version = max+1` when `definition_hash` differs from the current version (otherwise reuses current), and sets `status=active, activated_at=now(), current_version_id`
   - `pause(Flow $f)` sets `status=paused`, `paused_at=now()`
   - `resume(Flow $f)` sets `status=active`, `resumed_at=now()`
@@ -382,7 +382,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - `deleteFlow(Flow $f)` sets active enrolments to `cancelled`/`flow_deleted`, then deletes the flow; rollups are kept because there's no FK from step_stats
 
   Dispatch the domain events from `contracts/domain-events.md` (`marketing_automation.flow.activate.after`, etc.).
-- [ ] T063 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/EnrolmentService.php` with `enrol(TriggerEvent $e): array<int, Enrolment>`:
+- [X] T063 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/EnrolmentService.php` with `enrol(TriggerEvent $e): array<int, Enrolment>`:
   1. Find active flows whose `trigger_type` = `$e->type`, which are attached to `$e->channelId` in `automation_flow_channels`, and whose `activated_at <= now()`.
   2. Filter by `trigger_config` matching (for order_status_changed: `trigger_config.status` equals `payload.status` if set; for customer_inactive: `inactive_days` equals `payload.inactive_days`).
   3. Skip if `Settings::routing(channelCode, $flow->template_key)` is not `Native` (when template_key is null, always native).
@@ -391,7 +391,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   6. `insertOrIgnore`-style create on the unique `(flow_id, contact_id, trigger_key)` (catch `UniqueConstraintViolationException`), with `status=active`, `current_step_key = definition.entry`, `next_run_at = now()`, `flow_version_id = current_version_id`.
   7. Write an `entered` EnrolmentEvent, increment StepStat `enrolled` (T118 adds StatsRecorder; until then call a no-op `StatsRecorder::increment()` stub created here in `packages/Webkul/MarketingAutomation/src/Services/StatsRecorder.php`), and dispatch `ProcessEnrolmentStep` for the enrolment immediately.
   8. Dispatch `marketing_automation.enrolment.create.after`.
-- [ ] T064 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/ConditionEvaluator.php` with `evaluate(array $rule, Enrolment $e): bool`. The rule shape is `{all|any: [{field, op, value}]}` (nesting allowed). Implement every field and operator in data-model.md § Condition fields:
+- [X] T064 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/ConditionEvaluator.php` with `evaluate(array $rule, Enrolment $e): bool`. The rule shape is `{all|any: [{field, op, value}]}` (nesting allowed). Implement every field and operator in data-model.md § Condition fields:
   - `has_ordered_since_enrolment`: orders with customer_id (or customer_email) and `created_at >= enrolment.created_at`
   - `order_count`, `lifetime_spend` (sum `base_grand_total` of non-canceled orders), `last_order_total`
   - `customer_group_id`, `locale` (contact.locale), `channel_id`, `has_consent.{ch}` (ConsentService)
@@ -400,29 +400,29 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - `order_contains_*` (trigger order, or last order)
 
   Unit-style Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Engine/ConditionEvaluatorTest.php` with ≥1 case per field and op, plus all/any nesting. Run and pass.
-- [ ] T065 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/Steps/StepHandler.php` (interface) with `handle(Enrolment $e, array $step, StepContext $ctx): StepOutcome`. Create `packages/Webkul/MarketingAutomation/src/Engine/StepOutcome.php` (readonly) with static constructors `next(?string $key)`, `waitUntil(CarbonInterface $at, ?string $nextKey)` (also used for deferral: same key), `branch(bool $yes)`, `exit()`, `retry(int $delaySeconds)`. Create `StepContext.php` (readonly: Flow, FlowVersion, Contact, Channel, timezone string, context array lazily built via ContextBuilder).
-- [ ] T066 [P] [US2] `packages/Webkul/MarketingAutomation/src/Engine/Steps/WaitStep.php`:
+- [X] T065 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/Steps/StepHandler.php` (interface) with `handle(Enrolment $e, array $step, StepContext $ctx): StepOutcome`. Create `packages/Webkul/MarketingAutomation/src/Engine/StepOutcome.php` (readonly) with static constructors `next(?string $key)`, `waitUntil(CarbonInterface $at, ?string $nextKey)` (also used for deferral: same key), `branch(bool $yes)`, `exit()`, `retry(int $delaySeconds)`. Create `StepContext.php` (readonly: Flow, FlowVersion, Contact, Channel, timezone string, context array lazily built via ContextBuilder).
+- [X] T066 [P] [US2] `packages/Webkul/MarketingAutomation/src/Engine/Steps/WaitStep.php`:
   - `mode=duration` → `waitUntil(now()->addMinutes(minutes), next)`
   - `until_time` → the next occurrence of `time` (HH:MM) in the channel timezone (today if still ahead, else tomorrow), converted to UTC
   - `until_weekday` → the next date whose ISO weekday is in `weekdays[]` (1–7) at `time` (default 09:00)
 
   The first time the runner hits a wait it schedules; when it is re-invoked after the wait it moves on. Implement this by storing `meta.waiting_step = key` on the enrolment's last `waited` event, or simpler: WaitStep returns `waitUntil(at, next)`, and the runner sets `current_step_key = next` with `next_run_at = at`.
-- [ ] T067 [P] [US2] `packages/Webkul/MarketingAutomation/src/Engine/Steps/ConditionStep.php` → `branch(ConditionEvaluator::evaluate(step.rule, e))`. `packages/Webkul/MarketingAutomation/src/Engine/Steps/ExitStep.php` → `exit()`.
-- [ ] T068 [US2] Create `packages/Webkul/MarketingAutomation/src/Services/SendPolicy.php` with `check(Contact $c, MessageChannel $ch, FlowType $type, Channel $salesChannel): PolicyResult`. PolicyResult is readonly: `allowed: bool`, `reason: ?SkipReason`, `deferUntil: ?Carbon`, `recipient: ?string`. Order:
+- [X] T067 [P] [US2] `packages/Webkul/MarketingAutomation/src/Engine/Steps/ConditionStep.php` → `branch(ConditionEvaluator::evaluate(step.rule, e))`. `packages/Webkul/MarketingAutomation/src/Engine/Steps/ExitStep.php` → `exit()`.
+- [X] T068 [US2] Create `packages/Webkul/MarketingAutomation/src/Services/SendPolicy.php` with `check(Contact $c, MessageChannel $ch, FlowType $type, Channel $salesChannel): PolicyResult`. PolicyResult is readonly: `allowed: bool`, `reason: ?SkipReason`, `deferUntil: ?Carbon`, `recipient: ?string`. Order:
   1. Recipient: email → contact.email (must pass `filter_var FILTER_VALIDATE_EMAIL`); sms/whatsapp → contact.phone_e164 (null → `invalid_contact`).
   2. Marketing only: consent must be Granted, else `no_consent`.
   3. Provider (sms/whatsapp): `ProviderManager::defaultFor` must exist with status `connected`, else `no_provider`.
   4. Marketing only: quiet hours and frequency cap. Leave a clearly marked `// US4: quiet hours & cap — see T103` hook method `applyTimingRules()` that returns null for now.
 
   Transactional flows skip steps 2 and 4.
-- [ ] T069 [US2] Create the email mailable `packages/Webkul/MarketingAutomation/src/Mail/AutomationMail.php` extending `Illuminate\Mail\Mailable` (NOT queued; the job already runs on the queue). The constructor takes `string $subject, string $html, string $fromAddress, string $fromName, ?string $unsubscribeUrl`. If `unsubscribeUrl` is set, add headers `List-Unsubscribe: <url>` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click` via `headers()`. Use `html` content (no view compile of merchant data).
-- [ ] T070 [US2] Create `packages/Webkul/MarketingAutomation/src/Rendering/MessageRenderer.php`:
+- [X] T069 [US2] Create the email mailable `packages/Webkul/MarketingAutomation/src/Mail/AutomationMail.php` extending `Illuminate\Mail\Mailable` (NOT queued; the job already runs on the queue). The constructor takes `string $subject, string $html, string $fromAddress, string $fromName, ?string $unsubscribeUrl`. If `unsubscribeUrl` is set, add headers `List-Unsubscribe: <url>` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click` via `headers()`. Use `html` content (no view compile of merchant data).
+- [X] T070 [US2] Create `packages/Webkul/MarketingAutomation/src/Rendering/MessageRenderer.php`:
   - `renderEmail(array $step, array $context, string $locale): array{subject: string, html: string}`. Pick `step.subject[$locale] ?? step.subject[default locale] ?? first`, and likewise for blocks. Support these blocks now: `text` (paragraph through TemplateRenderer + `e()` + `nl2br`), `button`, `cart_items` (rows from `context.cart.items`: image, name, qty, price), `order_summary` (`context.order` items and total) and `footer` (text + unsubscribe link for marketing). Each one renders through a view `marketing_automation::emails.blocks.{type}` in `packages/Webkul/MarketingAutomation/src/Resources/views/emails/blocks/`, following the escaping rules in T109 (only `{{ }}` echo on pre-rendered values). US5 (T109) adds header, image, product_grid and coupon, and moves this rendering into EmailBlockRenderer without changing its output. Wrap in a minimal HTML layout view `marketing_automation::emails.layout` (a Blade file we own; merchant content is passed as an already-escaped `$bodyHtml` variable echoed with `{!! !!}`) with `dir` = `context.direction`.
   - `renderText(array $step, array $context, string $locale): string` for the SMS body.
   - `renderWhatsApp(array $step, array $context, string $locale): WhatsAppTemplateCall`. Load WhatsAppTemplate `template_id` and pick the language per locale map. `bodyParams` are `step.variables` (`{1: '{{ customer.first_name }}'}`) rendered in numeric order.
 
   Default locale = `core()->getDefaultLocaleCodeFromDefaultChannel()` (check the method exists in `packages/Webkul/Core/src/Core.php`; else use `config('app.locale')`).
-- [ ] T071 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/Steps/SendStep.php`, a single handler for send_email/send_sms/send_whatsapp:
+- [X] T071 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/Steps/SendStep.php`, a single handler for send_email/send_sms/send_whatsapp:
   1. Determine the channel from the step type.
   2. `SendPolicy::check`.
   3. If not allowed and `step.fallback_channel` is set: re-run the policy for the fallback channel. If allowed, send the fallback using `step.fallback_step` content (shape of the corresponding send step) and mark `is_fallback`.
@@ -430,12 +430,12 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   5. Create a MessageLog (`status=queued`, `is_marketing` from flow type, recipient, locale, `flow_id`, `step_key`, `provider_connection_id`).
   6. Dispatch `SendMessage` synchronously inside this job (`SendMessage::dispatchSync`) or call `MessageSender::send($log, $payload)` directly. Choose the direct call; create `packages/Webkul/MarketingAutomation/src/Services/MessageSender.php`.
   7. Write a `sent` event and return `next`.
-- [ ] T072 [US2] Create `packages/Webkul/MarketingAutomation/src/Services/MessageSender.php`:
+- [X] T072 [US2] Create `packages/Webkul/MarketingAutomation/src/Services/MessageSender.php`:
   - `sendEmail(MessageLog $log, array $rendered): void` → `Mail::to($log->recipient)->send(new AutomationMail(...))`. Set `fromAddress = Settings::senderAddress($channel->code)` and `fromName = Settings::senderName($channel->code)`, which fall back to `config('mail.from.address')` / `config('mail.from.name')` (FR-013). On success: `status=sent, sent_at=now()`. On `Throwable`: `status=failed, error_message`.
   - `sendProvider(MessageLog $log, OutboundMessage $msg): SendResult` → `ProviderManager::driver($conn)->send($conn, $msg)`. Accepted → `status=sent`, `provider_message_id`, `sent_at`. Permanent → `status=failed`, `error_code/error_message`. Retryable → increment `attempts`, store the error and throw `RetryableSendException` (create it in `packages/Webkul/MarketingAutomation/src/Exceptions/RetryableSendException.php`).
   - `statusCallbackUrl` = `route('automation.webhooks.receive', [$conn->driver, $conn->uuid]).'?s='.$conn->webhook_secret`.
   - Both methods dispatch `marketing_automation.message.send.before` (if any listener returns `false`, mark the log `failed` with `error_code='vetoed'`) and `.send.after`.
-- [ ] T073 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/StepRunner.php` with `run(Enrolment $e): void`:
+- [X] T073 [US2] Create `packages/Webkul/MarketingAutomation/src/Engine/StepRunner.php` with `run(Enrolment $e): void`:
   - Loop: load the step at `current_step_key` from `flowVersion.definition`, resolve the handler by type, call it, and apply the outcome:
     - `next(k)`: `k` null → complete (status completed, completed_at); else set current_step_key = k and continue the loop
     - `waitUntil`: set next_run_at, current_step_key = nextKey ?? same, write a `waited`/`deferred` event, stop
@@ -446,12 +446,12 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - Overdue rule: if the step is a send step and `flow.resumed_at` is not null and `next_run_at < flow.resumed_at` and `flow.resumed_at->diffInHours(next_run_at) > 24`, skip with reason `expired` and continue to next (US2-AS2). Never use `updated_at` for this.
   - Each step transition is saved in its own `DB::transaction`.
   - On `RetryableSendException`, bubble up so the job retries the same step (the current_step_key was not advanced).
-- [ ] T074 [US2] Create `packages/Webkul/MarketingAutomation/src/Jobs/ProcessEnrolmentStep.php` (ShouldQueue, `onQueue('automation')`).
+- [X] T074 [US2] Create `packages/Webkul/MarketingAutomation/src/Jobs/ProcessEnrolmentStep.php` (ShouldQueue, `onQueue('automation')`).
   - Constructor `(int $enrolmentId, ?string $lockToken = null)`.
   - `handle(StepRunner $runner)`: load the enrolment, return if its `lock_token` doesn't match a non-null `$lockToken`. Measure dispatch lag = `now()->diffInSeconds($enrolment->next_run_at)`. If it is over 300, `Cache::increment('marketing_automation.lag.over_5m')`; always `Cache::increment('marketing_automation.lag.total')` (SC-003 signal). Then run, then clear `locked_until/lock_token`. HealthCheck (T035) adds `lag_over_5m_ratio` = over_5m / total to its report and shows it on the health page (red above 0.01).
   - `backoff()`: `[60, 300, 900, 1800, 3600, 7200, 14400]`. `retryUntil()`: `now()->addHours(24)`.
   - `failed(Throwable)`: mark the current MessageLog `failed` (error_message 'retries exhausted'), write a `failed` journey event, then apply fallback if configured. Otherwise advance the enrolment to the next step and set next_run_at=now() (FR-019).
-- [ ] T075 [US2] Create `packages/Webkul/MarketingAutomation/src/Console/Commands/DispatchDueCommand.php` (`automation:dispatch-due {--now}`):
+- [X] T075 [US2] Create `packages/Webkul/MarketingAutomation/src/Console/Commands/DispatchDueCommand.php` (`automation:dispatch-due {--now}`):
   - Write the cache heartbeat `marketing_automation.scheduler_heartbeat` = now (HealthCheck).
   - Loop: generate a ULID token. Run `DB::table('automation_enrolments')->where('status','active')->where('next_run_at','<=',now())->where(fn($q)=>$q->whereNull('locked_until')->orWhere('locked_until','<',now()))->whereIn('flow_id', activeFlowIdsSubquery)->orderBy('next_run_at')->limit(500)->update(['locked_until'=>now()->addMinutes(5),'lock_token'=>$token])`. (MySQL supports UPDATE … ORDER BY … LIMIT. If the query builder can't do it, select ids `lockForUpdate` inside a transaction, then update by ids.)
   - Then select ids with that token and dispatch `ProcessEnrolmentStep($id, $token)` for each.
@@ -460,7 +460,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Implementation for US2 — triggers
 
-- [ ] T076 [US2] Create listeners in `packages/Webkul/MarketingAutomation/src/Listeners/` and register them in `EventServiceProvider::$listen`. Each builds a TriggerEvent and calls `EnrolmentService::enrol`. Wrap each call in `dispatch(fn () => ...)->onQueue('automation')` via a small queued job `packages/Webkul/MarketingAutomation/src/Jobs/IngestTrigger.php` (constructor takes a serialized TriggerEvent array), so storefront requests only queue work (SC-006).
+- [X] T076 [US2] Create listeners in `packages/Webkul/MarketingAutomation/src/Listeners/` and register them in `EventServiceProvider::$listen`. Each builds a TriggerEvent and calls `EnrolmentService::enrol`. Wrap each call in `dispatch(fn () => ...)->onQueue('automation')` via a small queued job `packages/Webkul/MarketingAutomation/src/Jobs/IngestTrigger.php` (constructor takes a serialized TriggerEvent array), so storefront requests only queue work (SC-006).
   - `CustomerListener::registered($customer)` on `customer.registration.after` (TriggerType::CustomerRegistered, key `customer:{id}`)
   - `NewsletterListener::subscribed($subscriber)` on `customer.subscription.after` (inspect the payload type in `packages/Webkul/Shop/src/Http/Controllers/SubscriptionController.php`; key `subscribe:{id}`). The same listener also grants email consent with source `Newsletter` when `is_subscribed`.
   - `OrderListener::placed($order)` on `checkout.order.save.after` (OrderPlaced, `order:{id}`, payload `{order_id}`)
@@ -468,23 +468,23 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - `ShipmentListener::saved($shipment)` on `sales.shipment.save.after` (OrderShipped, `shipment:{id}`, payload `{order_id, shipment_id}`)
 
   Check each event's payload by reading where it's dispatched (`grep -rn "sales.order.update" packages/Webkul`).
-- [ ] T077 [US2] Back-in-stock.
+- [X] T077 [US2] Back-in-stock.
   - Create `packages/Webkul/MarketingAutomation/src/Listeners/ProductListener.php` handling `catalog.product.update.after` (payload: product). Compute total inventory qty `product->inventories()->sum('qty')`. Use a cache key `marketing_automation.stock.{product_id}` set to the previous qty by a `catalog.product.update.before` handler. When previous ≤ 0 and new > 0, enrol each `waiting` BackInStockSubscription (TriggerType::BackInStock, key `bis:{subscription_id}`, payload `{product_id}`) and set it to `notified`.
   - Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Shop/BackInStockController.php` `store` (contract storefront-public-http.md). Validation: `product_id` exists:products,id; email or phone required; `consent_channel` in email,sms,whatsapp. Grant consent for that channel with source `checkout`. Return 201.
   - Route `POST automation/back-in-stock` named `shop.automation.back-in-stock` in `shop-routes.php`, with `->middleware('throttle:10,1')`.
   - Storefront form view `packages/Webkul/MarketingAutomation/src/Resources/views/shop/back-in-stock.blade.php`, injected through `Event::listen('bagisto.shop.products.view.description.after', ...)`. Render it only when the product is not saleable (`! $product->isSaleable()`); check the available variable name in `packages/Webkul/Shop/src/Resources/views/products/view.blade.php`.
-- [ ] T078 [US2] Create `packages/Webkul/MarketingAutomation/src/Console/Commands/DailyTriggersCommand.php` (`automation:daily-triggers`), scheduled `->hourly()`. For each channel, compute the local hour in `Settings::timezone`; run only when the local hour is 9 (once per local day, guarded by cache key `marketing_automation.daily.{channel}.{Y-m-d}`).
+- [X] T078 [US2] Create `packages/Webkul/MarketingAutomation/src/Console/Commands/DailyTriggersCommand.php` (`automation:daily-triggers`), scheduled `->hourly()`. For each channel, compute the local hour in `Settings::timezone`; run only when the local hour is 9 (once per local day, guarded by cache key `marketing_automation.daily.{channel}.{Y-m-d}`).
   - (a) Birthday: customers with `DAYOFMONTH/MONTH(date_of_birth)` = local today and `channel_id` = channel, key `birthday:{id}:{Y}`.
   - (b) Inactive: for each active flow with trigger customer_inactive, `inactive_days = N`: customers whose most recent order (`orders.created_at` max) is exactly N days ago (local date), key `inactive:{contact_id}:{Y-m-d}`, payload `{inactive_days: N}`.
   - Use chunked queries.
 
 ### Implementation for US2 — admin
 
-- [ ] T079 [US2] Create the Form Request `packages/Webkul/MarketingAutomation/src/Http/Requests/FlowRequest.php`. Rules: `name` required max:150; `trigger_type` Enum rule (TriggerType); `trigger_config` array; `type` Enum (FlowType); `channel_ids` required array min:1 with `channel_ids.*` exists:channels,id; `reentry_window_hours` integer 0..8760; `exit_goals` array, `exit_goals.*.type` in `order_placed`; `draft_definition` nullable array.
-- [ ] T080 [US2] Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Admin/FlowController.php` with `index` (FlowDataGrid / view), `templates`, `store`, `edit` (view), `update`, `activate`, `pause`, `resume`, `duplicate`, `destroy`, `preview`. Permission checks: `marketing.automation.flows` for read, `.flows.manage` for write. activate returns 422 `{message, errors}` on ValidationException. Add routes in `admin-routes.php` exactly as named in `contracts/admin-http.md` § Flows.
-- [ ] T081 [US2] Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Admin/FlowTestController.php` `send(Flow $flow, string $stepKey, Request $r)`: validate `{recipient, locale, sample: in:sample,customer, customer_id: required_if:sample,customer}`. Build the context (`ContextBuilder::forSample` or for the chosen customer). Render the step from `draft_definition`, create a MessageLog with `is_test=true`, and send via MessageSender to the recipient (normalize phone for sms/whatsapp) using the default provider of the flow's first channel. Return `{data: {message_log_id, status}}`. Skip consent checks (the admin is sending to themselves).
-- [ ] T082 [US2] Create `packages/Webkul/MarketingAutomation/src/DataGrids/FlowDataGrid.php` with columns name, trigger_type (translated), type, status (badge), channels (GROUP_CONCAT of channel codes), enrolled_30d and revenue_30d (subqueries on automation_step_stats; zero until US6), and actions edit / duplicate / delete. Create the view `packages/Webkul/MarketingAutomation/src/Resources/views/admin/flows/index.blade.php` with a datagrid and a "Create flow" button opening a modal: name, trigger select, type, channels multi-select, plus a template picker that loads `.flows.templates`.
-- [ ] T083 [US2] Create the flow builder page `packages/Webkul/MarketingAutomation/src/Resources/views/admin/flows/edit.blade.php` with an inline Vue 3 component `v-flow-builder`, pushed via `@pushOnce('scripts')` like other admin pages. **Keep it a vertical list builder, not a canvas**:
+- [X] T079 [US2] Create the Form Request `packages/Webkul/MarketingAutomation/src/Http/Requests/FlowRequest.php`. Rules: `name` required max:150; `trigger_type` Enum rule (TriggerType); `trigger_config` array; `type` Enum (FlowType); `channel_ids` required array min:1 with `channel_ids.*` exists:channels,id; `reentry_window_hours` integer 0..8760; `exit_goals` array, `exit_goals.*.type` in `order_placed`; `draft_definition` nullable array.
+- [X] T080 [US2] Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Admin/FlowController.php` with `index` (FlowDataGrid / view), `templates`, `store`, `edit` (view), `update`, `activate`, `pause`, `resume`, `duplicate`, `destroy`, `preview`. Permission checks: `marketing.automation.flows` for read, `.flows.manage` for write. activate returns 422 `{message, errors}` on ValidationException. Add routes in `admin-routes.php` exactly as named in `contracts/admin-http.md` § Flows.
+- [X] T081 [US2] Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Admin/FlowTestController.php` `send(Flow $flow, string $stepKey, Request $r)`: validate `{recipient, locale, sample: in:sample,customer, customer_id: required_if:sample,customer}`. Build the context (`ContextBuilder::forSample` or for the chosen customer). Render the step from `draft_definition`, create a MessageLog with `is_test=true`, and send via MessageSender to the recipient (normalize phone for sms/whatsapp) using the default provider of the flow's first channel. Return `{data: {message_log_id, status}}`. Skip consent checks (the admin is sending to themselves).
+- [X] T082 [US2] Create `packages/Webkul/MarketingAutomation/src/DataGrids/FlowDataGrid.php` with columns name, trigger_type (translated), type, status (badge), channels (GROUP_CONCAT of channel codes), enrolled_30d and revenue_30d (subqueries on automation_step_stats; zero until US6), and actions edit / duplicate / delete. Create the view `packages/Webkul/MarketingAutomation/src/Resources/views/admin/flows/index.blade.php` with a datagrid and a "Create flow" button opening a modal: name, trigger select, type, channels multi-select, plus a template picker that loads `.flows.templates`.
+- [X] T083 [US2] Create the flow builder page `packages/Webkul/MarketingAutomation/src/Resources/views/admin/flows/edit.blade.php` with an inline Vue 3 component `v-flow-builder`, pushed via `@pushOnce('scripts')` like other admin pages. **Keep it a vertical list builder, not a canvas**:
   - Top panel: flow settings (name, trigger + trigger_config inputs per trigger type, type, channels, re-entry hours, exit goal checkbox "Exit when an order is placed").
   - Main: an ordered list of step cards rendered recursively from `draft_definition`, starting at `entry`. A condition card shows two nested columns, "Yes" and "No", each a sub-list.
   - An "Add step" dropdown between cards inserts wait / condition / send email / send sms / send whatsapp / exit and re-links `next` pointers. Keys are generated as `s{n}` where n = max existing + 1.
@@ -497,7 +497,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
     - common: validity_hours
   - Buttons: Save (PUT update), Activate (POST activate; show the 422 errors next to the matching step card), Pause/Resume, and "Send test" on each send card (modal: recipient, locale, sample/customer).
   - All strings are translated.
-- [ ] T084 [US2] Create the prebuilt templates `packages/Webkul/MarketingAutomation/src/Database/Seeders/FlowTemplates.php`, a class with `all(): array` returning, for keys `welcome, post_purchase, win_back, order_status, back_in_stock` (abandoned_cart is added in T090), arrays `{key, name, description, trigger_type, trigger_config, type, reentry_window_hours, exit_goals, draft_definition}` with sensible English and Arabic content:
+- [X] T084 [US2] Create the prebuilt templates `packages/Webkul/MarketingAutomation/src/Database/Seeders/FlowTemplates.php`, a class with `all(): array` returning, for keys `welcome, post_purchase, win_back, order_status, back_in_stock` (abandoned_cart is added in T090), arrays `{key, name, description, trigger_type, trigger_config, type, reentry_window_hours, exit_goals, draft_definition}` with sensible English and Arabic content:
   - welcome: registration → email → wait 2d → condition has_ordered_since_enrolment false → whatsapp (fallback sms) → exit
   - post_purchase: order_completed → wait 7d → email review request
   - win_back: customer_inactive 90 → email → wait 3d → condition not ordered → sms
@@ -505,7 +505,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - back_in_stock: back_in_stock → email (fallback sms)
 
   WhatsApp steps reference `template_id: null`, so activation forces the admin to pick one. `FlowController::templates` returns them. `store` with `template_key` copies the template into the new draft flow. Update `FlowTemplateSeeder` (`packages/Webkul/MarketingAutomation/src/Database/Seeders/FlowTemplateSeeder.php`) to be a no-op (templates are code, not rows) and keep `automation:install` calling it for future use.
-- [ ] T085 [US2] Run all US2 tests (T054–T059, T064) and fix until green: `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/Engine packages/Webkul/MarketingAutomation/tests/Feature/Admin/FlowManagementTest.php`. Run pint.
+- [X] T085 [US2] Run all US2 tests (T054–T059, T064) and fix until green: `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/Engine packages/Webkul/MarketingAutomation/tests/Feature/Admin/FlowManagementTest.php`. Run pint.
 
 **Checkpoint**: US2 is independently demoable (the Welcome flow from the spec's Independent Test).
 

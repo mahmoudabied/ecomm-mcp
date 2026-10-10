@@ -62,4 +62,12 @@ class ProviderManager
 
         return $drivers;
     }
+
+    /**
+     * Whether a connection's webhook authenticates by signature or shared secret.
+     */
+    public function webhookAuth(ProviderConnection $connection): string
+    {
+        return (string) config("automation-providers.drivers.{$connection->driver}.webhook_auth", 'secret');
+    }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Webkul\Core\Models\ChannelProxy;
 use Webkul\MarketingAutomation\Contracts\MessageLog as MessageLogContract;
 use Webkul\MarketingAutomation\Database\Factories\MessageLogFactory;
 use Webkul\MarketingAutomation\Enums\MessageChannel;
@@ -58,6 +59,22 @@ class MessageLog extends Model implements MessageLogContract
             'opened_at'       => 'datetime',
             'clicked_at'      => 'datetime',
         ];
+    }
+
+    /**
+     * Get the parent record.
+     */
+    public function channel()
+    {
+        return $this->belongsTo(ChannelProxy::modelClass());
+    }
+
+    /**
+     * Get the parent record.
+     */
+    public function providerConnection()
+    {
+        return $this->belongsTo(ProviderConnectionProxy::modelClass());
     }
 
     /**

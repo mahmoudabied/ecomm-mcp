@@ -1,0 +1,60 @@
+{
+    "contents": [
+        {
+            "sid": "HXaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "account_sid": "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "name": "welcome_offer",
+            "language": "en",
+            "variables": {
+                "1": "first_name"
+            },
+            "types": {
+                "twilio/text": {
+                    "body": "Hi {{1}}, welcome to our store"
+                }
+            },
+            "approval_requests": {
+                "whatsapp": {
+                    "type": "whatsapp",
+                    "name": "welcome_offer",
+                    "category": "MARKETING",
+                    "content_type": "twilio/text",
+                    "status": "approved",
+                    "rejection_reason": "",
+                    "allow_category_change": true
+                }
+            },
+            "created_at": "2026-09-01T10:00:00Z"
+        },
+        {
+            "sid": "HXbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "account_sid": "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "name": "order_shipped_ar",
+            "language": "ar",
+            "variables": {},
+            "types": {
+                "twilio/text": {
+                    "body": "تم شحن طلبك"
+                }
+            },
+            "approval_requests": {
+                "whatsapp": {
+                    "type": "whatsapp",
+                    "name": "order_shipped_ar",
+                    "category": "UTILITY",
+                    "content_type": "twilio/text",
+                    "status": "pending",
+                    "rejection_reason": "",
+                    "allow_category_change": true
+                }
+            },
+            "created_at": "2026-09-02T10:00:00Z"
+        }
+    ],
+    "meta": {
+        "next_page_url": "https://content.twilio.com/v1/ContentAndApprovals?PageSize=100&Page=1",
+        "page": 0,
+        "page_size": 100,
+        "count": 3
+    }
+}

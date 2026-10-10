@@ -1,0 +1,34 @@
+{
+    "contents": [
+        {
+            "sid": "HXcccccccccccccccccccccccccccccccc",
+            "account_sid": "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "name": "appointment_reminder",
+            "language": "en",
+            "variables": {},
+            "types": {
+                "twilio/text": {
+                    "body": "Your appointment is tomorrow"
+                }
+            },
+            "approval_requests": {
+                "whatsapp": {
+                    "type": "whatsapp",
+                    "name": "appointment_reminder",
+                    "category": "UTILITY",
+                    "content_type": "twilio/text",
+                    "status": "approved",
+                    "rejection_reason": "",
+                    "allow_category_change": true
+                }
+            },
+            "created_at": "2026-09-03T10:00:00Z"
+        }
+    ],
+    "meta": {
+        "next_page_url": null,
+        "page": 1,
+        "page_size": 100,
+        "count": 3
+    }
+}

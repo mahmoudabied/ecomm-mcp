@@ -7,6 +7,8 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Webkul\Core\Http\Middleware\NoCacheMiddleware;
+use Webkul\MarketingAutomation\Console\Commands\DailyTriggersCommand;
+use Webkul\MarketingAutomation\Console\Commands\DispatchDueCommand;
 use Webkul\MarketingAutomation\Console\Commands\InstallCommand;
 use Webkul\MarketingAutomation\Services\ConsentService;
 use Webkul\MarketingAutomation\Services\ContactResolver;
@@ -43,6 +45,8 @@ class MarketingAutomationServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 InstallCommand::class,
+                DispatchDueCommand::class,
+                DailyTriggersCommand::class,
             ]);
         }
 
@@ -77,6 +81,15 @@ class MarketingAutomationServiceProvider extends ServiceProvider
 
         $this->app->register(EventServiceProvider::class);
 
-        $this->callAfterResolving(Schedule::class, fn (Schedule $schedule) => null);
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+            $schedule->command('automation:dispatch-due')
+                ->everyMinute()
+                ->withoutOverlapping()
+                ->runInBackground();
+
+            $schedule->command('automation:daily-triggers')
+                ->hourly()
+                ->withoutOverlapping();
+        });
     }
 }

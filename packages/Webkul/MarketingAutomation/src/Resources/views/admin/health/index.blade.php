@@ -57,9 +57,11 @@
                 <p class="font-semibold text-gray-800 dark:text-white">
                     @lang('marketing_automation::app.health.mail')
                 </p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                    @lang('marketing_automation::app.health.mail-hint')
-                </p>
+                @unless ($report['mail_configured'])
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        @lang('marketing_automation::app.health.mail-hint')
+                    </p>
+                @endunless
             </div>
 
             <span class="rounded px-3 py-1 text-sm font-semibold {{ $report['mail_configured'] ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">

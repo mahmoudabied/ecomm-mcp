@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Webkul\MarketingAutomation\Contracts\BackInStockSubscription as BackInStockSubscriptionContract;
 use Webkul\MarketingAutomation\Database\Factories\BackInStockSubscriptionFactory;
+use Webkul\Product\Models\ProductProxy;
 
 class BackInStockSubscription extends Model implements BackInStockSubscriptionContract
 {
@@ -34,6 +35,22 @@ class BackInStockSubscription extends Model implements BackInStockSubscriptionCo
         return [
             'notified_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the parent record.
+     */
+    public function contact()
+    {
+        return $this->belongsTo(ContactProxy::modelClass());
+    }
+
+    /**
+     * Get the parent record.
+     */
+    public function product()
+    {
+        return $this->belongsTo(ProductProxy::modelClass());
     }
 
     /**
