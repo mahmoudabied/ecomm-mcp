@@ -2,10 +2,6 @@
 
 namespace Webkul\MarketingAutomation\Database\Seeders;
 
-/**
- * The prebuilt flow templates. Templates are code, not database rows:
- * see FlowTemplates::all() for the definitions.
- */
 class FlowTemplates
 {
     /**
@@ -212,6 +208,77 @@ class FlowTemplates
                             'next' => 's2',
                         ],
                         's2' => ['type' => 'exit'],
+                    ],
+                ],
+            ],
+
+            'abandoned_cart' => [
+                'key'                  => 'abandoned_cart',
+                'name'                 => 'marketing_automation::app.flows.templates.abandoned_cart.name',
+                'description'          => 'marketing_automation::app.flows.templates.abandoned_cart.description',
+                'trigger_type'         => 'cart_abandoned',
+                'trigger_config'       => ['abandon_delay_minutes' => 60],
+                'type'                 => 'marketing',
+                'reentry_window_hours' => 168,
+                'exit_goals'           => [['type' => 'order_placed']],
+                'draft_definition'     => [
+                    'entry' => 's1',
+                    'steps' => [
+                        's1' => [
+                            'type'    => 'send_email',
+                            'subject' => ['en' => 'You left something behind', 'ar' => 'نسيت شيئاً في سلتك'],
+                            'blocks'  => [
+                                'en' => [
+                                    ['type' => 'text', 'text' => 'Hi {{ customer.first_name | default: "there" }}, your cart is waiting for you.'],
+                                    ['type' => 'cart_items'],
+                                    ['type' => 'button', 'label' => 'Restore my cart', 'href' => '{{ cart.restore_url }}'],
+                                ],
+                                'ar' => [
+                                    ['type' => 'text', 'text' => 'مرحبًا {{ customer.first_name | default: "بك" }}، سلتك ما زالت بانتظارك.'],
+                                    ['type' => 'cart_items'],
+                                    ['type' => 'button', 'label' => 'استعادة سلتي', 'href' => '{{ cart.restore_url }}'],
+                                ],
+                            ],
+                            'validity_hours' => 24,
+                            'next'           => 's2',
+                        ],
+                        's2' => ['type' => 'wait', 'mode' => 'duration', 'minutes' => 1380, 'next' => 's3'],
+                        's3' => [
+                            'type'             => 'send_whatsapp',
+                            'template_id'      => null,
+                            'variables'        => [1 => '{{ customer.first_name | default: "Hi" }}'],
+                            'language'         => ['en' => 'en_US', 'ar' => 'ar'],
+                            'validity_hours'   => 24,
+                            'fallback_channel' => 'sms',
+                            'fallback_step'    => [
+                                'body' => [
+                                    'en' => '{{ customer.first_name | default: "Hi" }}, your cart is waiting: {{ cart.restore_url }}',
+                                    'ar' => '{{ customer.first_name | default: "مرحبًا" }}، سلتك بانتظارك: {{ cart.restore_url }}',
+                                ],
+                                'validity_hours' => 24,
+                            ],
+                            'next' => 's4',
+                        ],
+                        's4' => ['type' => 'wait', 'mode' => 'duration', 'minutes' => 2880, 'next' => 's5'],
+                        's5' => [
+                            'type'    => 'send_email',
+                            'subject' => ['en' => 'Still thinking it over?', 'ar' => 'هل ما زلت تفكر؟'],
+                            'blocks'  => [
+                                'en' => [
+                                    ['type' => 'text', 'text' => 'Your cart is still here — these items are waiting for you.'],
+                                    ['type' => 'cart_items'],
+                                    ['type' => 'button', 'label' => 'Restore my cart', 'href' => '{{ cart.restore_url }}'],
+                                ],
+                                'ar' => [
+                                    ['type' => 'text', 'text' => 'سلتك ما زالت هنا — هذه المنتجات بانتظارك.'],
+                                    ['type' => 'cart_items'],
+                                    ['type' => 'button', 'label' => 'استعادة سلتي', 'href' => '{{ cart.restore_url }}'],
+                                ],
+                            ],
+                            'validity_hours' => 24,
+                            'next'           => 's6',
+                        ],
+                        's6' => ['type' => 'exit'],
                     ],
                 ],
             ],

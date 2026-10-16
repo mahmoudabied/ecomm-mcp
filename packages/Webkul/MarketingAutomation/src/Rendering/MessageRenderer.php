@@ -3,7 +3,7 @@
 namespace Webkul\MarketingAutomation\Rendering;
 
 use Webkul\MarketingAutomation\DTOs\WhatsAppTemplateCall;
-use Webkul\MarketingAutomation\Models\WhatsAppTemplate;
+use Webkul\MarketingAutomation\Repositories\WhatsAppTemplateRepository;
 
 class MessageRenderer
 {
@@ -12,6 +12,7 @@ class MessageRenderer
      */
     public function __construct(
         protected TemplateRenderer $templateRenderer,
+        protected WhatsAppTemplateRepository $whatsAppTemplateRepository,
     ) {}
 
     /**
@@ -23,6 +24,10 @@ class MessageRenderer
      */
     public function renderEmail(array $step, array $context, string $locale): array
     {
+        if (! empty($context['transactional'])) {
+            $step['blocks'] = $this->withoutRichBlocks($step['blocks'] ?? []);
+        }
+
         $subject = $this->localized($step['subject'] ?? [], $locale);
 
         $blocks = $this->localizedBlocks($step['blocks'] ?? [], $locale);
@@ -33,7 +38,10 @@ class MessageRenderer
 
         $unsubscribeUrl = $context['unsubscribe_url'] ?? null;
 
-        if ($unsubscribeUrl && ! in_array('footer', array_column($blocks, 'type'), true)) {
+        if (
+            $unsubscribeUrl
+            && ! in_array('footer', array_column($blocks, 'type'), true)
+        ) {
             $bodyHtml .= view('marketing_automation::emails.blocks.footer', [
                 'text'     => '',
                 'link'     => $unsubscribeUrl,
@@ -73,8 +81,7 @@ class MessageRenderer
      */
     public function renderWhatsApp(array $step, array $context, string $locale): WhatsAppTemplateCall
     {
-        /** @var ?WhatsAppTemplate $template */
-        $template = WhatsAppTemplate::query()->find($step['template_id'] ?? null);
+        $template = $this->whatsAppTemplateRepository->find($step['template_id'] ?? null);
 
         $languageMap = $step['language'] ?? [];
 
@@ -128,6 +135,28 @@ class MessageRenderer
         }
 
         return view($view, $data)->render();
+    }
+
+    /**
+     * Remove the rich blocks a transactional email may never carry; the validator blocks them too.
+     *
+     * @param  array<string, mixed>  $map
+     * @return array<string, mixed>
+     */
+    protected function withoutRichBlocks(array $map): array
+    {
+        foreach ($map as $locale => $blocks) {
+            if (! is_array($blocks)) {
+                continue;
+            }
+
+            $map[$locale] = array_values(array_filter(
+                $blocks,
+                fn ($block) => ! in_array($block['type'] ?? '', ['coupon', 'product_grid'], true),
+            ));
+        }
+
+        return $map;
     }
 
     /**

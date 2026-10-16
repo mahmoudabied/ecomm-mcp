@@ -4,7 +4,9 @@ namespace Webkul\MarketingAutomation\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Event;
+use Webkul\MarketingAutomation\Listeners\CartListener;
 use Webkul\MarketingAutomation\Listeners\CustomerListener;
+use Webkul\MarketingAutomation\Listeners\GdprListener;
 use Webkul\MarketingAutomation\Listeners\NewsletterListener;
 use Webkul\MarketingAutomation\Listeners\OrderListener;
 use Webkul\MarketingAutomation\Listeners\ProductListener;
@@ -30,6 +32,8 @@ class EventServiceProvider extends ServiceProvider
         OrderListener::class,
         ShipmentListener::class,
         ProductListener::class,
+        CartListener::class,
+        GdprListener::class,
     ];
 
     /**
@@ -49,6 +53,22 @@ class EventServiceProvider extends ServiceProvider
     {
         Event::listen('bagisto.shop.products.view.description.after', function ($viewRenderEventManager) {
             $viewRenderEventManager->addTemplate('marketing_automation::shop.back-in-stock');
+        });
+
+        Event::listen('bagisto.shop.checkout.onepage.address.after', function ($viewRenderEventManager) {
+            $viewRenderEventManager->addTemplate('marketing_automation::shop.checkout.contact-capture');
+        });
+
+        Event::listen('bagisto.shop.customers.signup_form_controls.after', function ($viewRenderEventManager) {
+            $viewRenderEventManager->addTemplate('marketing_automation::shop.consent-checkboxes');
+        });
+
+        Event::listen('bagisto.shop.customers.account.profile.edit.before', function ($viewRenderEventManager) {
+            $viewRenderEventManager->addTemplate('marketing_automation::shop.account.preferences-link');
+        });
+
+        Event::listen('bagisto.shop.customers.account.gdpr.list.after', function ($viewRenderEventManager) {
+            $viewRenderEventManager->addTemplate('marketing_automation::shop.account.gdpr-export-link');
         });
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Webkul\MarketingAutomation\Repositories;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
@@ -10,6 +11,7 @@ use Webkul\MarketingAutomation\Engine\FlowDefinition;
 use Webkul\MarketingAutomation\Engine\FlowValidator;
 use Webkul\MarketingAutomation\Enums\EnrolmentStatus;
 use Webkul\MarketingAutomation\Enums\FlowStatus;
+use Webkul\MarketingAutomation\Enums\TriggerType;
 use Webkul\MarketingAutomation\Models\Flow;
 use Webkul\MarketingAutomation\Models\FlowVersion;
 
@@ -46,7 +48,10 @@ class FlowRepository extends Repository
             $draft = new FlowDefinition($flow->draft_definition);
             $current = $flow->currentVersion;
 
-            if ($current === null || $current->definition_hash !== $draft->hash()) {
+            if (
+                $current === null
+                || $current->definition_hash !== $draft->hash()
+            ) {
                 $version = $flow->versions()->create([
                     'version'         => ((int) $flow->versions()->max('version')) + 1,
                     'definition'      => $flow->draft_definition,
@@ -142,5 +147,22 @@ class FlowRepository extends Repository
 
             $flow->delete();
         });
+    }
+
+    /**
+     * The idle delays, in minutes, of the channel's active cart-abandoned flows.
+     *
+     * @return Collection<int, int>
+     */
+    public function activeCartAbandonedDelays(int $channelId, int $defaultMinutes): Collection
+    {
+        return $this->model
+            ->where('trigger_type', TriggerType::CartAbandoned->value)
+            ->where('status', FlowStatus::Active->value)
+            ->whereHas('channels', fn ($query) => $query->where('channels.id', $channelId))
+            ->get()
+            ->map(fn (Flow $flow) => (int) ($flow->trigger_config['abandon_delay_minutes'] ?? $defaultMinutes))
+            ->values()
+            ->toBase();
     }
 }

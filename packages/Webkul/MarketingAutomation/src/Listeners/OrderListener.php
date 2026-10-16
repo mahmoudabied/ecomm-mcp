@@ -3,12 +3,20 @@
 namespace Webkul\MarketingAutomation\Listeners;
 
 use Webkul\MarketingAutomation\DTOs\TriggerEvent;
+use Webkul\MarketingAutomation\Engine\ExitGoalService;
 use Webkul\MarketingAutomation\Enums\TriggerType;
 use Webkul\MarketingAutomation\Jobs\IngestTrigger;
 use Webkul\Sales\Models\Order;
 
 class OrderListener
 {
+    /**
+     * Create a new order listener instance.
+     */
+    public function __construct(
+        protected ExitGoalService $exitGoalService,
+    ) {}
+
     /**
      * Register the listeners for the automation module.
      */
@@ -20,10 +28,13 @@ class OrderListener
     }
 
     /**
-     * A new order was placed.
+     * A new order was placed: settle the exit goals synchronously (SC-005),
+     * then queue the trigger ingestion.
      */
     public function placed(Order $order): void
     {
+        $this->exitGoalService->orderPlaced($order);
+
         IngestTrigger::dispatchDto(new TriggerEvent(
             type: TriggerType::OrderPlaced,
             channelId: (int) $order->channel_id,

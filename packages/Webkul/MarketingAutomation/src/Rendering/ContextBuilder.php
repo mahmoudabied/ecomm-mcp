@@ -2,14 +2,29 @@
 
 namespace Webkul\MarketingAutomation\Rendering;
 
-use Webkul\Checkout\Models\Cart;
-use Webkul\Core\Models\Locale;
-use Webkul\MarketingAutomation\Models\Enrolment;
-use Webkul\Product\Models\Product;
-use Webkul\Sales\Models\Order;
+use Webkul\Checkout\Contracts\Cart;
+use Webkul\Checkout\Repositories\CartRepository;
+use Webkul\Core\Repositories\LocaleRepository;
+use Webkul\MarketingAutomation\Contracts\Enrolment;
+use Webkul\MarketingAutomation\Repositories\AbandonedCartRepository;
+use Webkul\MarketingAutomation\Services\RestoreToken;
+use Webkul\Product\Contracts\Product;
+use Webkul\Sales\Contracts\Order;
+use Webkul\Sales\Repositories\OrderRepository;
 
 class ContextBuilder
 {
+    /**
+     * Create a new context builder instance.
+     */
+    public function __construct(
+        protected AbandonedCartRepository $abandonedCartRepository,
+        protected CartRepository $cartRepository,
+        protected LocaleRepository $localeRepository,
+        protected OrderRepository $orderRepository,
+        protected RestoreToken $restoreToken,
+    ) {}
+
     /**
      * Build the render context for an enrolment's current step.
      */
@@ -26,11 +41,15 @@ class ContextBuilder
         $payload = $enrolment->trigger_payload ?? [];
 
         if (! empty($payload['cart_id'])) {
-            $context['cart'] = $this->cartSection(Cart::query()->find($payload['cart_id']));
+            $context['cart'] = $this->cartSection($this->cartRepository->find($payload['cart_id']));
+
+            if ($restoreUrl = $this->restoreUrlFor((int) ($payload['abandoned_cart_id'] ?? 0))) {
+                $context['cart']['restore_url'] = $restoreUrl;
+            }
         }
 
         if (! empty($payload['order_id'])) {
-            $context['order'] = $this->orderSection(Order::query()->find($payload['order_id']));
+            $context['order'] = $this->orderSection($this->orderRepository->find($payload['order_id']));
         }
 
         return $context;
@@ -65,6 +84,24 @@ class ContextBuilder
     }
 
     /**
+     * The signed restore link of the abandoned cart, rebuilt from the record.
+     */
+    protected function restoreUrlFor(int $abandonedCartId): ?string
+    {
+        if ($abandonedCartId === 0) {
+            return null;
+        }
+
+        $abandoned = $this->abandonedCartRepository->find($abandonedCartId);
+
+        if ($abandoned === null) {
+            return null;
+        }
+
+        return route('shop.automation.cart.restore', $this->restoreToken->for($abandoned));
+    }
+
+    /**
      * Build the store-level context shared by every message.
      */
     protected function baseContext(int $channelId, ?string $locale): array
@@ -95,7 +132,10 @@ class ContextBuilder
         foreach ($cart->items as $item) {
             $product = $item->product;
 
-            if ($product === null || ! $product->isSaleable()) {
+            if (
+                $product === null
+                || ! $product->isSaleable()
+            ) {
                 continue;
             }
 
@@ -148,8 +188,7 @@ class ContextBuilder
      */
     protected function reviewUrl(Order $order): ?string
     {
-        $firstItem = $order->items->first();
-        $product = $firstItem?->product;
+        $product = $order->items->first()?->product;
 
         if ($product === null) {
             return null;
@@ -179,6 +218,6 @@ class ContextBuilder
      */
     protected function directionFor(string $locale): string
     {
-        return Locale::query()->where('code', $locale)->value('direction') ?: 'ltr';
+        return $this->localeRepository->findOneByField('code', $locale)?->direction ?: 'ltr';
     }
 }

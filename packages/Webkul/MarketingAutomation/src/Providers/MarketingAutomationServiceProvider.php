@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Webkul\Core\Http\Middleware\NoCacheMiddleware;
 use Webkul\MarketingAutomation\Console\Commands\DailyTriggersCommand;
+use Webkul\MarketingAutomation\Console\Commands\DetectAbandonedCartsCommand;
 use Webkul\MarketingAutomation\Console\Commands\DispatchDueCommand;
 use Webkul\MarketingAutomation\Console\Commands\InstallCommand;
 use Webkul\MarketingAutomation\Services\ConsentService;
@@ -47,6 +48,7 @@ class MarketingAutomationServiceProvider extends ServiceProvider
                 InstallCommand::class,
                 DispatchDueCommand::class,
                 DailyTriggersCommand::class,
+                DetectAbandonedCartsCommand::class,
             ]);
         }
 
@@ -86,6 +88,10 @@ class MarketingAutomationServiceProvider extends ServiceProvider
                 ->everyMinute()
                 ->withoutOverlapping()
                 ->runInBackground();
+
+            $schedule->command('automation:detect-abandoned-carts')
+                ->everyFiveMinutes()
+                ->withoutOverlapping();
 
             $schedule->command('automation:daily-triggers')
                 ->hourly()

@@ -5,10 +5,9 @@ namespace Webkul\MarketingAutomation\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
-use Webkul\MarketingAutomation\Contracts\Providers\SupportsInboundOptOut;
+use Webkul\MarketingAutomation\Jobs\ProcessWebhook;
 use Webkul\MarketingAutomation\Models\ProviderConnection;
 use Webkul\MarketingAutomation\Services\ProviderManager;
-use Webkul\MarketingAutomation\Services\WebhookProcessor;
 
 class WebhookController extends Controller
 {
@@ -17,7 +16,6 @@ class WebhookController extends Controller
      */
     public function __construct(
         protected ProviderManager $providerManager,
-        protected WebhookProcessor $processor,
     ) {}
 
     /**
@@ -35,7 +33,10 @@ class WebhookController extends Controller
         if ($driver === 'meta_cloud') {
             $token = (string) $request->query('hub_verify_token');
 
-            if ($token === '' || ! hash_equals($connection->webhook_secret, $token)) {
+            if (
+                $token === ''
+                || ! hash_equals($connection->webhook_secret, $token)
+            ) {
                 abort(403);
             }
 
@@ -46,7 +47,7 @@ class WebhookController extends Controller
     }
 
     /**
-     * Accept a provider webhook, verify it and record the delivery updates.
+     * Accept a provider webhook, verify it and queue the processing.
      */
     public function receive(Request $request, string $driver, string $uuid): Response
     {
@@ -60,7 +61,8 @@ class WebhookController extends Controller
     }
 
     /**
-     * Verify the request and hand its payload to the webhook processor.
+     * Verify the request and hand its payload to the queue; providers get
+     * their 200 immediately, the payload is processed on the queue.
      */
     protected function process(Request $request, ProviderConnection $connection): Response
     {
@@ -68,19 +70,14 @@ class WebhookController extends Controller
             abort(403);
         }
 
-        $driver = $this->providerManager->driver($connection);
-
-        $this->processor->processStatusUpdates(
-            $connection,
-            $driver->parseStatusWebhook($request, $connection),
-        );
-
-        if ($driver instanceof SupportsInboundOptOut) {
-            $this->processor->processInbound(
-                $connection,
-                $driver->parseInbound($request, $connection),
-            );
-        }
+        ProcessWebhook::dispatch($connection->driver, $connection->id, [
+            'method'  => $request->getMethod(),
+            'uri'     => $request->getRequestUri(),
+            'query'   => $request->query->all(),
+            'input'   => $request->input(),
+            'headers' => $request->headers->all(),
+            'body'    => $request->getContent(),
+        ]);
 
         return response('');
     }

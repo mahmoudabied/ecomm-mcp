@@ -518,7 +518,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Tests for US1 (write first)
 
-- [ ] T086 [P] [US1] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/AbandonedCart/DetectionTest.php`:
+- [X] T086 [P] [US1] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/AbandonedCart/DetectionTest.php`:
   - an active cart with items whose `updated_at` is 61 min ago, with customer_id → an AbandonedCart row + an enrolment in the active Abandoned Cart flow (key `cart:{cart_id}:{updated_at timestamp}`)
   - a guest cart with only `customer_email` → enrolled
   - a guest cart with only a billing address phone → enrolled, and the email step is skipped with `invalid_contact` (US1-AS3)
@@ -527,7 +527,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - the same cart re-scanned → no duplicate
   - a contact with a cart-abandoned enrolment 3 days ago and a 7-day re-entry window → not enrolled (US1-AS4)
   - a cart modified after detection → AbandonedCart status `reopened`; the original enrolment stays `active`, and its next email shows the updated items; a later scan creates a new trigger key, but no new enrolment while the re-entry window is still open
-- [ ] T087 [P] [US1] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/AbandonedCart/RecoveryTest.php`:
+- [X] T087 [P] [US1] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/AbandonedCart/RecoveryTest.php`:
   - restore link GET with a valid token as a guest → 302 to the cart page and the session `cart_id` = cart id (inspect how `Cart::getCart()` resolves the guest cart in `packages/Webkul/Checkout/src/Cart.php` and assert accordingly)
   - an expired token → redirect with the flash `expired`
   - an unknown token → same
@@ -540,7 +540,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Implementation for US1
 
-- [ ] T088 [US1] Create `packages/Webkul/MarketingAutomation/src/Services/AbandonedCartService.php`:
+- [X] T088 [US1] Create `packages/Webkul/MarketingAutomation/src/Services/AbandonedCartService.php`:
   - `detect(): int` runs this query: `cart` where `is_active=1`, `items_count>0`, `updated_at <= now()-delay`, `updated_at >= now()-7 days`. The delay is the minimum `trigger_config.abandon_delay_minutes` among active cart_abandoned flows for that channel (default 60). Join `cart_addresses` (address_type `cart_billing`; check the constant in `packages/Webkul/Checkout/src/Models/CartAddress.php`) for the phone and country. The contact is customer_id, else `customer_email`, else the address phone. Process in chunks of 200.
   - Create `packages/Webkul/MarketingAutomation/src/Services/RestoreToken.php`:
     - `for(AbandonedCart $c): string` returns `$c->id.'.'.rtrim(strtr(base64_encode(hash_hmac('sha256', $c->id.'|'.$c->detected_at->timestamp, config('app.key'), true)), '+/', '-_'), '=')`
@@ -548,11 +548,11 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - For each cart: resolve the contact. Upsert AbandonedCart by cart_id. If the existing status is `abandoned` and the trigger key is the same → skip. Otherwise set `status = abandoned`, `detected_at = now()`, `restore_token_hash = RestoreToken::hash(RestoreToken::for($record))` and `restore_token_expires_at = now() + restoreLinkDays`. **Never store the plain token anywhere** (research R6); the link is rebuilt from the record when rendering. A re-detected cart gets a new `detected_at`, so a new token is issued and older links stop working. Then `EnrolmentService::enrol(TriggerEvent(CartAbandoned, key "cart:{id}:{updated_at->timestamp}", payload {cart_id, abandoned_cart_id}))`.
   - Dispatch `marketing_automation.cart.abandoned`.
   - Per-flow delay: EnrolmentService must skip flows whose `abandon_delay_minutes` is greater than the cart idle time. Add this filter to T063's trigger_config matching.
-- [ ] T089 [US1] Create `packages/Webkul/MarketingAutomation/src/Console/Commands/DetectAbandonedCartsCommand.php` (`automation:detect-abandoned-carts`), scheduled `everyFiveMinutes()->withoutOverlapping()`. Create `packages/Webkul/MarketingAutomation/src/Listeners/CartListener.php`:
+- [X] T089 [US1] Create `packages/Webkul/MarketingAutomation/src/Console/Commands/DetectAbandonedCartsCommand.php` (`automation:detect-abandoned-carts`), scheduled `everyFiveMinutes()->withoutOverlapping()`. Create `packages/Webkul/MarketingAutomation/src/Listeners/CartListener.php`:
   - `changed($cart)` on `checkout.cart.add.after`, `checkout.cart.update.after`, `checkout.cart.delete.after` → if an AbandonedCart exists with status `abandoned` → set `reopened`. Inspect the payloads; some pass a cart item, so resolve `Cart::getCart()`.
   - `orderPlaced($order)` on `checkout.order.save.after` → find the AbandonedCart with `cart_id = $order->cart_id` OR `restored_cart_id = $order->cart_id` → set `recovered` + `recovered_order_id`.
   - A `reopened` cart does NOT cancel its active enrolment. Later steps render the cart's current contents at send time (spec edge case "Cart contents change after enrolment"). A new enrolment for the re-detected cart is created only after the flow's re-entry window has passed.
-- [ ] T090 [US1] Exit goals.
+- [X] T090 [US1] Exit goals.
   - Create `packages/Webkul/MarketingAutomation/src/Engine/ExitGoalService.php` with `orderPlaced(Order $order): void`. Find active enrolments for the contact (resolve by customer_id or customer_email within the order channel) whose flow `exit_goals` contains `order_placed` and whose `created_at <= order.created_at`. Set `status=converted`, `completed_at`, `next_run_at=null`, write an `exited` event (reason `goal_met`), increment StepStat `converted` and dispatch `marketing_automation.enrolment.finish.after`.
   - Call it from `OrderListener::placed` **synchronously** (before queuing the trigger ingestion), so SC-005 holds even when the queue is slow.
   - Add the `abandoned_cart` template to `packages/Webkul/MarketingAutomation/src/Database/Seeders/FlowTemplates.php`: trigger cart_abandoned `{abandon_delay_minutes: 60}`, re-entry 168 h, exit goal order_placed. Steps:
@@ -564,7 +564,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
     - s6 exit
 
     That's 3 message steps (FR-008).
-- [ ] T091 [US1] Restore link.
+- [X] T091 [US1] Restore link.
   - Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Shop/CartRestoreController.php` `restore(string $token)`: find AbandonedCart by `hash('sha256', $token)` with `restore_token_expires_at > now()`. If not found → redirect `route('shop.checkout.cart.index')` with flash `warning` = trans `marketing_automation::app.shop.restore.expired`. Load the cart.
     - Guest (not `auth()->guard('customer')->check()`) with a customer-owned cart (`cart.customer_id` set): never redirect to login (FR-012).
       - For each active item, load the product with `app(\Webkul\Product\Repositories\ProductRepository::class)->find($item->product_id)` and call `Cart::addProduct($product, ['product_id' => $item->product_id, 'quantity' => $item->quantity] + ($item->additional ?? []))`. `addProduct` takes a **Product model**, not an id (`packages/Webkul/Checkout/src/Cart.php:256`). Skip items whose product is missing or can't be sold, and catch an exception per item so one bad item doesn't abort the restore. The first `addProduct` call creates the guest cart and puts it in the session through `setCart()`, which only does that for carts without a customer; read `Cart::addProduct()` / `createCart()` to confirm.
@@ -577,13 +577,13 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - Route `GET automation/cart/restore/{token}` named `shop.automation.cart.restore` in `shop-routes.php`.
   - In `ContextBuilder::forEnrolment`, when `trigger_payload.abandoned_cart_id` is set, set `cart.restore_url = route('shop.automation.cart.restore', RestoreToken::for(AbandonedCart::find(trigger_payload.abandoned_cart_id)))`. The controller lookup by `RestoreToken::hash($token)` stays the same.
   - Cart item rendering: skip items whose product `status` is 0 or not saleable. If none are left and the step's blocks include `cart_items`, the SendStep must skip with reason `cart_empty`. Expose `context.cart.items` already filtered, and add a check in SendStep for email steps that contain a cart_items block and have empty items.
-- [ ] T092 [US1] Guest contact capture.
+- [X] T092 [US1] Guest contact capture.
   - Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Shop/CheckoutContactController.php` `store` (contract storefront-public-http.md). It validates email (nullable email) and phone (nullable max:30), plus `consents` booleans. It attaches to the current cart: sets `cart.customer_email` if empty, resolves the contact, and grants each consent=true with source `checkout`. Then `Cookie::queue('ma_contact', $contact->uuid, 60 * 24 * 365, null, null, null, true, false, 'Lax')` (an id-only cookie used to identify returning visitors; Klaviyo T135 reads it). Returns 204. Its test (in `DetectionTest`, T086) asserts the response has the `ma_contact` cookie. Route `POST automation/checkout-contact` named `shop.automation.checkout-contact`, `throttle:10,1`.
   - Create the view `packages/Webkul/MarketingAutomation/src/Resources/views/shop/checkout/contact-capture.blade.php`. It holds unchecked consent checkboxes ("Email me offers", "Send me SMS", "Send me WhatsApp messages") and a script that, on `blur`/`change` of the checkout email and phone inputs (query `input[name$="[email]"]`, `input[name$="[phone]"]`), POSTs via `fetch` with the CSRF token from `meta[name=csrf-token]`.
   - Inject it with `Event::listen('bagisto.shop.checkout.onepage.address.after', ...)` in `EventServiceProvider::boot`.
   - The Amacommerce theme lacks this hook: add `{!! view_render_event('bagisto.shop.checkout.onepage.address.after') !!}` at the end of its checkout address view. Find the file with `grep -rln "onepage" packages/Webkul/AmacommerceTheme/src/Resources/views/checkout`.
-- [ ] T093 [US1] Customer login merge: in `packages/Webkul/MarketingAutomation/src/Listeners/CustomerListener.php` add `loggedIn($customer)` on `customer.after.login`. If a guest contact with the customer's email exists in the channel (customer_id null), call `ContactResolver::merge(guest, forCustomer(customer))`. Then queue the `ma_contact` cookie (same parameters as T092) with the customer contact's uuid; the test asserts the login response has it. Add a test case to `packages/Webkul/MarketingAutomation/tests/Feature/AbandonedCart/DetectionTest.php`: a guest enrolment + login → exactly one active enrolment, keyed to the customer contact.
-- [ ] T094 [US1] Run the US1 tests and fix until green: `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/AbandonedCart`. Run pint.
+- [X] T093 [US1] Customer login merge: in `packages/Webkul/MarketingAutomation/src/Listeners/CustomerListener.php` add `loggedIn($customer)` on `customer.after.login`. If a guest contact with the customer's email exists in the channel (customer_id null), call `ContactResolver::merge(guest, forCustomer(customer))`. Then queue the `ma_contact` cookie (same parameters as T092) with the customer contact's uuid; the test asserts the login response has it. Add a test case to `packages/Webkul/MarketingAutomation/tests/Feature/AbandonedCart/DetectionTest.php`: a guest enrolment + login → exactly one active enrolment, keyed to the customer contact.
+- [X] T094 [US1] Run the US1 tests and fix until green: `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/AbandonedCart`. Run pint.
 
 **Checkpoint (MVP)**: Phases 1–5 deliver a working abandoned-cart recovery across email/SMS/WhatsApp.
 
@@ -596,49 +596,49 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Tests for US4 (write first)
 
-- [ ] T095 [P] [US4] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Consent/OptInTest.php`:
+- [X] T095 [P] [US4] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Consent/OptInTest.php`:
   - registration POST (`shop.customers.register.store`; check the route name in `packages/Webkul/Shop/src/Routes/customer-routes.php`) with `marketing_consent[sms]=1` → SMS consent granted, source `registration`; without it → none
   - account preferences PUT revokes WhatsApp (source `account`)
   - checkout-contact POST with consents grants them (source `checkout`)
   - the signup page HTML contains the 3 unchecked checkboxes (shop theme)
-- [ ] T096 [P] [US4] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Consent/UnsubscribeTest.php`:
+- [X] T096 [P] [US4] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Consent/UnsubscribeTest.php`:
   - a marketing email contains the unsubscribe URL and the `List-Unsubscribe` + `List-Unsubscribe-Post` headers (`Mail::fake()`, then inspect the sent mailable's headers)
   - GET shows a confirm page; POST revokes email consent with source `unsubscribe_link` and a timestamp (US4-AS2)
   - one-click POST with body `List-Unsubscribe=One-Click` and no CSRF → 200 and revoked
   - a tampered token → 404
   - transactional emails contain no unsubscribe header
-- [ ] T097 [P] [US4] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Consent/InboundOptOutTest.php`:
+- [X] T097 [P] [US4] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Consent/InboundOptOutTest.php`:
   - POST a Twilio inbound webhook with a valid signature and Body `STOP` → SMS consent revoked, source `sms_stop`
   - Arabic `إلغاء` → revoked
   - Meta inbound with a `STOP` button → WhatsApp revoked, source `whatsapp_optout`
   - a bad signature → 403
   - an unknown connection uuid → 404
-- [ ] T098 [P] [US4] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Consent/SendTimingTest.php`, with quiet hours enabled 22:00–09:00 and channel timezone `Asia/Riyadh`:
+- [X] T098 [P] [US4] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Consent/SendTimingTest.php`, with quiet hours enabled 22:00–09:00 and channel timezone `Asia/Riyadh`:
   - a marketing SMS due at 23:00 local → deferred, `next_run_at` = 09:00 local next day (in UTC) (US4-AS3)
   - a marketing email at 23:00 → sent (quiet hours only for SMS/WhatsApp)
   - a transactional SMS at 23:00 → sent immediately (clarification Q4)
   - cap 2 per 24 h: with 2 marketing SMS already logged in the last 24 h, the 3rd is deferred until the oldest + 24 h; if that is beyond `validity_hours` (set 1) → skipped `frequency_cap` (US4-AS4)
   - transactional messages don't count toward the cap
-- [ ] T099 [P] [US4] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Consent/GdprTest.php`:
+- [X] T099 [P] [US4] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Consent/GdprTest.php`:
   - admin customer deletion (fires `customer.delete.before`) → contact, consents, consent events, message logs and enrolments deleted; step_stats rows remain
   - a GDPR request with `type=delete` updated to `status=completed` (fire `customer.account.gdpr-request.update.after` with the request model) → same; `status=processing` → nothing erased
   - GET `shop.customers.account.marketing-preferences.export` as the customer → a JSON download with keys `consents`, `consent_events`, `enrolments`, `messages` containing that customer's rows only
 
 ### Implementation for US4
 
-- [ ] T100 [US4] Opt-in UI.
+- [X] T100 [US4] Opt-in UI.
   - Create the view `packages/Webkul/MarketingAutomation/src/Resources/views/shop/consent-checkboxes.blade.php`: three unchecked checkboxes named `marketing_consent[email]`, `marketing_consent[sms]`, `marketing_consent[whatsapp]`, with translated labels. Inject it via `Event::listen('bagisto.shop.customers.signup_form_controls.after', ...)` (this hook exists in both the Shop and Amacommerce themes).
   - In `CustomerListener::registered` (T076), read `request()->input('marketing_consent', [])` and grant each consent with source `registration` (synchronously, before queuing the trigger).
   - Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Shop/MarketingPreferencesController.php` (`index`, `update`) with routes `GET|PUT customer/account/marketing-preferences` named `shop.customers.account.marketing-preferences.index|update`, using middleware `customer`. The view `packages/Webkul/MarketingAutomation/src/Resources/views/shop/account/marketing-preferences.blade.php` extends the account layout; copy the layout component used by `packages/Webkul/Shop/src/Resources/views/customers/account/profile/edit.blade.php`.
   - Add a link to the account profile page via `Event::listen('bagisto.shop.customers.account.profile.edit.before', ...)`. Amacommerce: if its profile view lacks the hook, add `{!! view_render_event('bagisto.shop.customers.account.profile.edit.before', ['customer' => $customer]) !!}` to it.
-- [ ] T101 [US4] Unsubscribe.
+- [X] T101 [US4] Unsubscribe.
   - Create `packages/Webkul/MarketingAutomation/src/Services/SignedToken.php` with `make(string ...$parts): string` and `parse(string $token): ?array`, per the contracts/storefront-public-http.md token format (base64url payload + '.' + base64url HMAC-SHA256 with `config('app.key')`, compared with `hash_equals`).
   - Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Shop/UnsubscribeController.php`:
     - `show($token)`: confirm page `marketing_automation::shop.unsubscribe`
     - `confirm($token)`: revoke the parsed channel for the parsed contact uuid, source `UnsubscribeLink`; record a MessageEvent `unsubscribed` on the message uuid via the MessageEvents stub; return a thank-you page, or an empty 200 when the body is `List-Unsubscribe=One-Click`
   - Routes go in `public-routes.php` (no CSRF, session OK): `GET|POST automation/unsubscribe/{token}` named `shop.automation.unsubscribe` and `shop.automation.unsubscribe.confirm`.
   - In SendStep / MessageRenderer, for marketing email set `context.unsubscribe_url = route('shop.automation.unsubscribe', SignedToken::make(contact.uuid, 'email', log.uuid))`, pass it to AutomationMail, and append a footer link to the rendered HTML if the template has no footer block. For marketing SMS, append nothing (opt-out is via STOP).
-- [ ] T102 [US4] Webhook endpoint.
+- [X] T102 [US4] Webhook endpoint.
   - Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/WebhookController.php`:
     - `verify(string $driver, string $uuid)`: GET; for Meta, echo `hub_challenge` when `hub_verify_token` = webhook_secret
     - `receive(string $driver, string $uuid)`: find the connection by uuid AND driver (404 if missing); `verifyWebhook` (403 if false); dispatch `ProcessWebhook` with the request's method, headers, raw body and query captured into an array; return 200 `''`
@@ -647,14 +647,14 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
     - If the driver implements SupportsInboundOptOut and `parseInbound` returns a message whose trimmed, case-insensitive body matches `/^(stop|unsubscribe|إلغاء|الغاء|توقف)$/iu`, or whose type is `opt_out`: resolve the contact by the E.164 phone in the connection's channels (use the default mapping tables) and revoke the connection's channel (sms → `SmsStop`, whatsapp → `WhatsappOptout`).
     - Status updates are handled in US6 (T116). Leave a clearly marked call `$this->applyStatusUpdates(...)` that is empty for now.
   - Exclude these routes from response cache: check `config/responsecache.php`. If routes are cached by middleware `cache.response` only on specific routes, nothing needs to be done.
-- [ ] T103 [US4] Quiet hours and cap. Implement `SendPolicy::applyTimingRules()` (T068 hook):
+- [X] T103 [US4] Quiet hours and cap. Implement `SendPolicy::applyTimingRules()` (T068 hook):
   - Only when the flow type is Marketing.
   - Quiet hours (only sms/whatsapp, and only if `quiet_hours_enabled`): convert now to the channel tz. If the local time is within [start, end) (handle wrap past midnight: start > end means overnight), set `deferUntil` = the next local `end` time converted to UTC.
   - Cap: `MessageLog::where(contact_id)->where(message_channel)->where('is_marketing', true)->where('is_test', false)->whereIn('status', ['queued','sent','delivered','read'])->where('created_at', '>=', now()->subHours(window))`, ordered oldest first. If count >= cap_count → `deferUntil = oldest.created_at + window hours + 1 minute`.
   - If both apply, take the later time.
   - SendStep (T071) already turns deferral into skip/expired when it exceeds validity_hours.
-- [ ] T104 [US4] Transactional guard: in `MessageRenderer::renderEmail`, when the flow type is Transactional, drop any `coupon` or `product_grid` blocks defensively (the validator already blocks them) and never set unsubscribe_url/headers. Add assertions for this to `UnsubscribeTest` (T096).
-- [ ] T105 [US4] GDPR.
+- [X] T104 [US4] Transactional guard: in `MessageRenderer::renderEmail`, when the flow type is Transactional, drop any `coupon` or `product_grid` blocks defensively (the validator already blocks them) and never set unsubscribe_url/headers. Add assertions for this to `UnsubscribeTest` (T096).
+- [X] T105 [US4] GDPR.
   - Create `packages/Webkul/MarketingAutomation/src/Services/GdprService.php`:
     - `export(Customer $c): array{consents: array, consent_events: array, enrolments: array, messages: array}`
     - `erase(Customer $c): void`: for every contact of the customer (by customer_id, or matching email), set active enrolments to cancelled (`exit_reason gdpr`), then delete message events, message logs, enrolment events, enrolments, consents, consent events, abandoned carts, back-in-stock subscriptions and the contact, in a transaction. step_stats and attributions are kept; set `attributions.message_log_id` null (FK nullOnDelete).
@@ -662,7 +662,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
     - `customer.delete.before` (payload: Customer; dispatched in `packages/Webkul/Admin/src/Http/Controllers/Customers/CustomerController.php`) → `GdprService::erase($customer)`. Use *before*, because FK cascades remove the `customer_id` link once the row is deleted.
     - `customer.account.gdpr-request.update.after` (payload: `Webkul\GDPR\Models\GDPRDataRequest`; dispatched by the admin `GDPRController::update`) → when `$request->type === 'delete'` and `$request->status === 'completed'`, load the customer by `$request->customer_id` and call `erase()`.
   - Export: Bagisto builds its GDPR PDF/HTML inline in `packages/Webkul/Shop/src/Http/Controllers/Customer/GDPRController::pdfView/htmlView` and offers no hook. Add route `GET customer/account/marketing-preferences/export` named `shop.customers.account.marketing-preferences.export` (middleware `customer`) in `MarketingPreferencesController::export()`. It returns `response()->json(GdprService::export($customer))` with `Content-Disposition: attachment; filename=marketing-data.json`. Link it from the marketing preferences page (T100) and from the GDPR page via `Event::listen('bagisto.shop.customers.account.gdpr.after', ...)`. If that view hook doesn't exist in the Shop GDPR view, add it only to the Amacommerce GDPR view (never edit Shop core).
-- [ ] T106 [US4] Run the US4 tests and fix until green: `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/Consent`. Re-run the US1/US2 tests to check for regressions. Run pint.
+- [X] T106 [US4] Run the US4 tests and fix until green: `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/Consent`. Re-run the US1/US2 tests to check for regressions. Run pint.
 
 **Checkpoint**: P1 scope (US1–US4) is complete and compliant.
 

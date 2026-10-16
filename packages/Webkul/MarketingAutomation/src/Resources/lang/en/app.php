@@ -189,6 +189,27 @@ return [
     ],
 
     'shop' => [
+        'restore' => [
+            'expired' => 'This cart recovery link has expired. Please review your cart directly.',
+        ],
+
+        'contact-capture' => [
+            'email'    => 'Email me offers and updates',
+            'sms'      => 'Send me SMS offers',
+            'whatsapp' => 'Send me WhatsApp messages',
+        ],
+
+        'preferences' => [
+            'title'    => 'Marketing preferences',
+            'email'    => 'Email me offers and updates',
+            'sms'      => 'Send me SMS offers',
+            'whatsapp' => 'Send me WhatsApp messages',
+            'save'     => 'Save preferences',
+            'saved'    => 'Your marketing preferences were saved.',
+            'link'     => 'Marketing preferences',
+            'export'   => 'Download my marketing data',
+        ],
+
         'unsubscribe' => [
             'title'        => 'Unsubscribe',
             'confirm-text' => 'Stop receiving marketing :channel messages from us?',

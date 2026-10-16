@@ -66,7 +66,7 @@ class SendStep implements StepHandler
 
         $channel = self::CHANNEL_BY_TYPE[$step['type']];
 
-        $result = $this->policy->check($enrolment->contact, $channel, $context->flow->type, $context->channel);
+        $result = $this->policy->check($enrolment->contact, $channel, $context->flow->type, $context->channel, $enrolment->id);
 
         if ($result->allowed) {
             return $this->deliver($enrolment, $step, $context, $channel, $result);
@@ -96,7 +96,10 @@ class SendStep implements StepHandler
         PolicyResult $result,
         bool $isFallback = false,
     ): StepOutcome {
-        if ($channel === MessageChannel::Email && $this->cartWentEmpty($step, $context)) {
+        if (
+            $channel === MessageChannel::Email
+            && $this->cartWentEmpty($step, $context)
+        ) {
             $this->record($enrolment, $context->currentStepKey, JourneyEvent::Skipped, SkipReason::CartEmpty->value);
 
             return StepOutcome::next($step['next'] ?? null);
@@ -120,7 +123,10 @@ class SendStep implements StepHandler
             return $outcome;
         }
 
-        if ($outcome === SendStatus::PermanentError && ! $isFallback) {
+        if (
+            $outcome === SendStatus::PermanentError
+            && ! $isFallback
+        ) {
             if ($fallback = $this->tryFallback($enrolment, $step, $context, PolicyResult::skip(SkipReason::NoProvider), true)) {
                 return $fallback;
             }
@@ -177,9 +183,8 @@ class SendStep implements StepHandler
     }
 
     /**
-     * Pick up a step this visit already worked on, so a re-run (a job retry
-     * after an exception, or a fallback waiting out its backoff) never sends
-     * the primary twice nor duplicates the Skipped/FallbackUsed entries.
+     * Pick up a step this visit already worked on, so a retried or resumed run never
+     * sends the primary twice nor duplicates the Skipped/FallbackUsed entries.
      */
     protected function resumeCurrentVisit(Enrolment $enrolment, array $step, StepContext $context): ?StepOutcome
     {
@@ -201,7 +206,10 @@ class SendStep implements StepHandler
 
         $primaryLog = $this->currentVisitLog($enrolment, $stepKey, false);
 
-        if ($primaryLog !== null && $this->wasDelivered($primaryLog)) {
+        if (
+            $primaryLog !== null
+            && $this->wasDelivered($primaryLog)
+        ) {
             $this->recordOnce($enrolment, $stepKey, JourneyEvent::Sent, $primaryLog->id);
 
             return StepOutcome::next($step['next'] ?? null);
@@ -228,9 +236,13 @@ class SendStep implements StepHandler
             $fallbackChannel,
             $context->flow->type,
             $context->channel,
+            $enrolment->id,
         );
 
-        if (! $fallbackResult->allowed && $fallbackResult->deferUntil !== null) {
+        if (
+            ! $fallbackResult->allowed
+            && $fallbackResult->deferUntil !== null
+        ) {
             return StepOutcome::deferUntil($fallbackResult->deferUntil, $enrolment->current_step_key, $fallbackResult->reason?->value);
         }
 
@@ -269,10 +281,8 @@ class SendStep implements StepHandler
     }
 
     /**
-     * The latest log of this step written during the enrolment's current
-     * visit. A loop back to the step always passes a wait (the validator
-     * rejects waitless cycles), so a log whose journey entry predates the
-     * latest Waited entry belongs to an earlier visit.
+     * The step's latest log in the current visit; loops always pass a wait,
+     * so a log whose journey entry predates the latest Waited entry is older.
      */
     protected function currentVisitLog(Enrolment $enrolment, string $stepKey, bool $isFallback): ?MessageLog
     {
@@ -323,7 +333,10 @@ class SendStep implements StepHandler
 
         $primaryLog = $this->currentVisitLog($enrolment, $stepKey, false);
 
-        if ($primaryLog !== null && $this->wasDelivered($primaryLog)) {
+        if (
+            $primaryLog !== null
+            && $this->wasDelivered($primaryLog)
+        ) {
             $this->recordOnce($enrolment, $stepKey, JourneyEvent::Sent, $primaryLog->id);
 
             return StepOutcome::next(null);
@@ -346,7 +359,10 @@ class SendStep implements StepHandler
 
         $fallbackStep = $step['fallback_step'] ?? null;
 
-        if (blank($fallbackChannelValue) || ! is_array($fallbackStep)) {
+        if (
+            blank($fallbackChannelValue)
+            || ! is_array($fallbackStep)
+        ) {
             return StepOutcome::next(null);
         }
 
@@ -363,6 +379,7 @@ class SendStep implements StepHandler
             $fallbackChannel,
             $context->flow->type,
             $context->channel,
+            $enrolment->id,
         );
 
         if (! $fallbackResult->allowed) {
@@ -400,7 +417,10 @@ class SendStep implements StepHandler
 
         $fallbackStep = $step['fallback_step'] ?? null;
 
-        if (blank($fallbackChannelValue) || ! is_array($fallbackStep)) {
+        if (
+            blank($fallbackChannelValue)
+            || ! is_array($fallbackStep)
+        ) {
             return null;
         }
 
@@ -417,6 +437,7 @@ class SendStep implements StepHandler
             $fallbackChannel,
             $context->flow->type,
             $context->channel,
+            $enrolment->id,
         );
 
         if (! $fallbackResult->allowed) {
@@ -446,7 +467,7 @@ class SendStep implements StepHandler
         $validHours = (int) ($step['validity_hours'] ?? 24);
 
         if ($result->deferUntil->greaterThan($dueAt->copy()->addHours($validHours))) {
-            $this->record($enrolment, $context->currentStepKey, JourneyEvent::Skipped, SkipReason::Expired->value);
+            $this->record($enrolment, $context->currentStepKey, JourneyEvent::Skipped, ($result->reason ?? SkipReason::Expired)->value);
 
             return StepOutcome::next($step['next'] ?? null);
         }
@@ -462,7 +483,8 @@ class SendStep implements StepHandler
         $unsubscribeUrl = $this->unsubscribeLink->forEmail($log, $context->contact->uuid);
 
         $rendered = $this->renderer->renderEmail($step, [
-            ...$context->renderContext(),
+            ...$this->messageContext($log, $context),
+            'transactional'   => $context->flow->type === FlowType::Transactional,
             'unsubscribe_url' => $unsubscribeUrl,
         ], $locale);
 
@@ -478,7 +500,7 @@ class SendStep implements StepHandler
      */
     protected function sendSms(MessageLog $log, array $step, StepContext $context, string $locale): SendStatus|StepOutcome
     {
-        $body = $this->renderer->renderText($step, $context->renderContext(), $locale);
+        $body = $this->renderer->renderText($step, $this->messageContext($log, $context), $locale);
 
         $log->update(['rendered_body' => $body]);
 
@@ -496,7 +518,7 @@ class SendStep implements StepHandler
      */
     protected function sendWhatsApp(MessageLog $log, array $step, StepContext $context, string $locale): SendStatus|StepOutcome
     {
-        $call = $this->renderer->renderWhatsApp($step, $context->renderContext(), $locale);
+        $call = $this->renderer->renderWhatsApp($step, $this->messageContext($log, $context), $locale);
 
         return $this->pushToProvider($log, new OutboundMessage(
             to: $log->recipient,
@@ -505,6 +527,23 @@ class SendStep implements StepHandler
             template: $call,
             messageUuid: $log->uuid,
         ));
+    }
+
+    /**
+     * The render context of one message: the cart restore link carries the
+     * message uuid, so a restore click is recorded against this message.
+     *
+     * @return array<string, mixed>
+     */
+    protected function messageContext(MessageLog $log, StepContext $context): array
+    {
+        $renderContext = $context->renderContext();
+
+        if (! empty($renderContext['cart']['restore_url'])) {
+            $renderContext['cart']['restore_url'] .= '?'.http_build_query(['m' => $log->uuid]);
+        }
+
+        return $renderContext;
     }
 
     /**

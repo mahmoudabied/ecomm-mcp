@@ -5,6 +5,7 @@ namespace Webkul\MarketingAutomation\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Checkout\Models\Cart;
 use Webkul\Core\Models\Channel;
+use Webkul\MarketingAutomation\Enums\AbandonedCartStatus;
 use Webkul\MarketingAutomation\Models\AbandonedCart;
 use Webkul\MarketingAutomation\Models\Contact;
 
@@ -27,7 +28,7 @@ class AbandonedCartFactory extends Factory
             'contact_id'               => Contact::factory(),
             'channel_id'               => Channel::query()->first()->id,
             'detected_at'              => now(),
-            'status'                   => 'abandoned',
+            'status'                   => AbandonedCartStatus::Abandoned->value,
             'restore_token_hash'       => hash('sha256', $this->faker->uuid()),
             'restore_token_expires_at' => now()->addDays(7),
             'cart_snapshot'            => [],
