@@ -1,0 +1,1 @@
+{"error":{"message":"(#130429) Rate limit hit","type":"OAuthException","code":130429,"error_data":{"messaging_product":"whatsapp","details":"Message failed to send because more than 2 messages per second"},"fbtrace_id":"A1b2C3d4E5f8"}}

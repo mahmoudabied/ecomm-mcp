@@ -2,20 +2,25 @@
 
 use App\Http\Middleware\EncryptCookies;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies as BaseEncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
 use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
+use Illuminate\Session\Middleware\StartSession;
 use Webkul\Core\Http\Middleware\SecureHeaders;
 use Webkul\Installer\Http\Middleware\CanInstall;
-use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 
 return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
     ->withMiddleware(function (Middleware $middleware) {
-      // ... rest of middleware setup
+        // ... rest of middleware setup
 
         /**
          * Remove session and cookie middleware from the 'web' middleware group.

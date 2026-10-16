@@ -1,0 +1,59 @@
+{
+  "data": [
+    {
+      "id": "1029384756",
+      "name": "hello_world",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "language": "en_US",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "TEXT",
+          "text": "Hello World"
+        },
+        {
+          "type": "BODY",
+          "text": "Hello {{1}}, welcome to our store!"
+        },
+        {
+          "type": "FOOTER",
+          "text": "Bagisto Team"
+        }
+      ]
+    },
+    {
+      "id": "1029384757",
+      "name": "order_update",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "language": "ar",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "طلبك {{1}} حالته الآن: {{2}}"
+        }
+      ]
+    },
+    {
+      "id": "1029384758",
+      "name": "promo_october",
+      "status": "PAUSED",
+      "category": "MARKETING",
+      "language": "en_US",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "Mega sale today!"
+        }
+      ]
+    }
+  ],
+  "paging": {
+    "cursors": {
+      "before": "MAZDZD",
+      "after": "MQZDZD"
+    },
+    "next": "https://graph.facebook.com/v21.0/1111111111/message_templates?limit=200&after=MQZDZD"
+  }
+}

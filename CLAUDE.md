@@ -212,3 +212,12 @@ $this->app->singleton(Service::class, fn () => new Service(fn () => request()));
 - Do NOT delete tests without approval.
 
 </laravel-boost-guidelines>
+
+## Active Technologies
+- PHP 8.2+ / Laravel 11.x / Blade templates + Bagisto 2.x core, Tailwind CSS 3.x, Vite 5.x, Vue 3 (inline components) (001-figma-ecommerce-theme)
+- N/A (presentation layer only — uses Bagisto's existing database) (001-figma-ecommerce-theme)
+- PHP 8.4 (composer constraint ^8.2) / Laravel 11.x + Bagisto 2.x core modules (Core, Customer, Checkout, Sales, CartRule, Product, Inventory, GDPR, Admin, Shop, DataGrid), `konekt/concord`, `prettus/l5-repository`, Laravel HTTP client (Guzzle), Vue 3 inline components (admin builder), Blade mail components. **New**: `giggsey/libphonenumber-for-php-lite` (research R8). (002-marketing-automation)
+- MySQL (existing connection). 20 new tables: 17 in MarketingAutomation and 3 in Klaviyo (data-model.md). Credentials use the `encrypted:array` cast. Cache is used for the scheduler heartbeat. (002-marketing-automation)
+
+## Recent Changes
+- 001-figma-ecommerce-theme: Added PHP 8.2+ / Laravel 11.x / Blade templates + Bagisto 2.x core, Tailwind CSS 3.x, Vite 5.x, Vue 3 (inline components)

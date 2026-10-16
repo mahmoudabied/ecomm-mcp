@@ -1,17 +1,31 @@
 <?php
 
-use Spatie\Multitenancy\Jobs\TenantAware;
+use App\Tenant\AppTenantDomainTenantFinder;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Events\CallQueuedListener;
 use Illuminate\Mail\SendQueuedMailable;
-use Spatie\Multitenancy\Jobs\NotTenantAware;
 use Illuminate\Notifications\SendQueuedNotifications;
 use Illuminate\Queue\CallQueuedClosure;
 use Spatie\Multitenancy\Actions\ForgetCurrentTenantAction;
 use Spatie\Multitenancy\Actions\MakeQueueTenantAwareAction;
 use Spatie\Multitenancy\Actions\MakeTenantCurrentAction;
 use Spatie\Multitenancy\Actions\MigrateTenantAction;
+use Spatie\Multitenancy\Jobs\NotTenantAware;
+use Spatie\Multitenancy\Jobs\TenantAware;
 use Spatie\Multitenancy\Models\Tenant;
+use Webkul\CatalogRule\Jobs\DeleteCatalogRuleIndex;
+use Webkul\CatalogRule\Jobs\UpdateCreateCatalogRuleIndex;
+use Webkul\CatalogRule\Jobs\UpdateCreateProductIndex;
+use Webkul\Core\Jobs\UpdateCreateVisitableIndex;
+use Webkul\Core\Jobs\UpdateCreateVisitIndex;
+use Webkul\Marketing\Jobs\UpdateCreateSearchTerm;
+use Webkul\Notification\Events\CreateOrderNotification;
+use Webkul\Notification\Events\UpdateOrderNotification;
+use Webkul\Product\Jobs\ElasticSearch\DeleteIndex as DeleteElasticSearchIndex;
+use Webkul\Product\Jobs\ElasticSearch\UpdateCreateIndex as UpdateCreateElasticSearchIndex;
+use Webkul\Product\Jobs\UpdateCreateInventoryIndex;
+use Webkul\Product\Jobs\UpdateCreatePriceIndex;
+use Webkul\Sitemap\Jobs\ProcessSitemap;
 
 return [
     /*
@@ -21,7 +35,7 @@ return [
      * This class should extend `Spatie\Multitenancy\TenantFinder\TenantFinder`
      *
      */
-    'tenant_finder' => \App\Tenant\AppTenantDomainTenantFinder::class,
+    'tenant_finder' => AppTenantDomainTenantFinder::class,
 
     /*
      * These fields are used by tenant:artisan command to match one or more tenant.
@@ -47,7 +61,7 @@ return [
      * It must  extend `Spatie\Multitenancy\Models\Tenant::class` or
      * implement `Spatie\Multitenancy\Contracts\IsTenant::class` interface
      */
-    'tenant_model' => AppModelsTenant::class,
+    'tenant_model' => Aps\Models\Tenant::class,
 
     /*
      * If there is a current tenant when dispatching a job, the id of the current tenant
@@ -89,10 +103,10 @@ return [
      * Your custom action should always extend the default one.
      */
     'actions' => [
-        'make_tenant_current_action' => MakeTenantCurrentAction::class,
-        'forget_current_tenant_action' => ForgetCurrentTenantAction::class,
+        'make_tenant_current_action'     => MakeTenantCurrentAction::class,
+        'forget_current_tenant_action'   => ForgetCurrentTenantAction::class,
         'make_queue_tenant_aware_action' => MakeQueueTenantAwareAction::class,
-        'migrate_tenant' => MigrateTenantAction::class,
+        'migrate_tenant'                 => MigrateTenantAction::class,
     ],
 
     /*
@@ -102,11 +116,11 @@ return [
      * resolve JobDecorator to getAction() like so: JobDecorator::class => 'getAction'
      */
     'queueable_to_job' => [
-        SendQueuedMailable::class => 'mailable',
+        SendQueuedMailable::class      => 'mailable',
         SendQueuedNotifications::class => 'notification',
-        CallQueuedClosure::class => 'closure',
-        CallQueuedListener::class => 'class',
-        BroadcastEvent::class => 'event',
+        CallQueuedClosure::class       => 'closure',
+        CallQueuedListener::class      => 'class',
+        BroadcastEvent::class          => 'event',
     ],
 
     /*
@@ -130,6 +144,25 @@ return [
      * Jobs not tenant aware even if these don't implement the NotTenantAware interface.
      */
     'not_tenant_aware_jobs' => [
-        // ...
+        // Broadcast payloads carry no tenant context in this app.
+        BroadcastEvent::class,
+
+        // Core notification broadcasts resolve to these events through
+        // queueable_to_job; they run on the broadcastable queue only.
+        CreateOrderNotification::class,
+        UpdateOrderNotification::class,
+
+        // Core index and statistic jobs operate on the shared database.
+        DeleteCatalogRuleIndex::class,
+        UpdateCreateCatalogRuleIndex::class,
+        UpdateCreateProductIndex::class,
+        UpdateCreateVisitableIndex::class,
+        UpdateCreateVisitIndex::class,
+        UpdateCreateSearchTerm::class,
+        UpdateCreateInventoryIndex::class,
+        UpdateCreatePriceIndex::class,
+        UpdateCreateElasticSearchIndex::class,
+        DeleteElasticSearchIndex::class,
+        ProcessSitemap::class,
     ],
 ];
