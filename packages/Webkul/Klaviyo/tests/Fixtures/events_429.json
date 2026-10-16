@@ -1,0 +1,10 @@
+{
+    "errors": [
+        {
+            "id": "<uuid>",
+            "status": 429,
+            "title": "Too many requests.",
+            "detail": "Rate limit exceeded, retry later."
+        }
+    ]
+}

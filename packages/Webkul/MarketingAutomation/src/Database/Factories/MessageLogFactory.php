@@ -26,6 +26,7 @@ class MessageLogFactory extends Factory
     {
         return [
             'flow_id'         => Flow::factory(),
+            'step_key'        => 's1',
             'contact_id'      => Contact::factory(),
             'channel_id'      => Channel::query()->first()->id,
             'message_channel' => MessageChannel::Email->value,

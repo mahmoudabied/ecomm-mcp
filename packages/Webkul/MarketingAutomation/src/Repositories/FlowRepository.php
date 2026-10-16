@@ -138,9 +138,10 @@ class FlowRepository extends Repository
             $flow->enrolments()
                 ->where('status', EnrolmentStatus::Active->value)
                 ->update([
-                    'status'      => EnrolmentStatus::Cancelled->value,
-                    'exit_reason' => 'flow_deleted',
-                    'next_run_at' => null,
+                    'status'       => EnrolmentStatus::Cancelled->value,
+                    'exit_reason'  => 'flow_deleted',
+                    'completed_at' => now(),
+                    'next_run_at'  => null,
                 ]);
 
             $flow->channels()->detach();

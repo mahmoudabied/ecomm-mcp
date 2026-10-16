@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Webkul\MarketingAutomation\Http\Controllers\TrackingController;
 use Webkul\MarketingAutomation\Http\Controllers\WebhookController;
 
 /*
@@ -19,4 +20,21 @@ Route::prefix('automation/webhooks')->group(function () {
 
     Route::post('{driver}/{uuid}', [WebhookController::class, 'receive'])
         ->name('automation.webhooks.receive');
+});
+
+/*
+ * Open and click tracking. Recipients without sessions hit these links, so
+ * they run outside the web session group; the token signature is the only
+ * authentication, and clicks may only follow urls stored on the message.
+ */
+Route::prefix('automation/t')->group(function () {
+    Route::get('o/{token}.gif', [TrackingController::class, 'open'])
+        ->where('token', '[A-Za-z0-9._-]+')
+        ->middleware('throttle:600,1')
+        ->name('automation.track.open');
+
+    Route::get('c/{token}/{hash}', [TrackingController::class, 'click'])
+        ->where(['token' => '[A-Za-z0-9._-]+', 'hash' => '[A-Za-z0-9]+'])
+        ->middleware('throttle:600,1')
+        ->name('automation.track.click');
 });

@@ -285,6 +285,26 @@ class FlowController extends Controller
     }
 
     /**
+     * Render an unsaved draft step for the block editor's live preview.
+     */
+    public function previewDraft(Flow $flow)
+    {
+        $this->authorizeRead();
+
+        $data = request()->validate([
+            'step'   => ['required', 'array'],
+            'locale' => ['nullable', 'string', 'max:10'],
+        ]);
+
+        $context = app(ContextBuilder::class)
+            ->forSample($flow->channels->first()?->id ?? (int) core()->getDefaultChannel()?->id, $data['locale'] ?? config('app.locale'));
+
+        return response(
+            app(MessageRenderer::class)->renderEmail($data['step'], $context, $data['locale'] ?? config('app.locale'))['html'],
+        );
+    }
+
+    /**
      * Guard the read actions.
      */
     protected function authorizeRead(): void

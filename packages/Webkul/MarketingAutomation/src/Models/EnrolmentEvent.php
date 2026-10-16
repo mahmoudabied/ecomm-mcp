@@ -55,6 +55,14 @@ class EnrolmentEvent extends Model implements EnrolmentEventContract
     }
 
     /**
+     * Get the message this entry refers to, when it is about a delivery.
+     */
+    public function messageLog()
+    {
+        return $this->belongsTo(MessageLogProxy::modelClass());
+    }
+
+    /**
      * Create a new factory instance for the model.
      */
     protected static function newFactory(): Factory

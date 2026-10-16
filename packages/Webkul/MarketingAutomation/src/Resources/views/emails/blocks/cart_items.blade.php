@@ -6,13 +6,13 @@
                     <img src="{{ $item['image_url'] }}" alt="" width="56" height="56" style="display: block; border-radius: 4px;">
                 @endif
             </td>
-            <td style="padding: 12px 8px; border-bottom: 1px solid #eeeeee; font-size: 14px; color: #333333;">
-                {{ e($item['name'] ?? '') }}
+            <td style="padding: 12px 8px; border-bottom: 1px solid #eeeeee; font-size: 14px; color: #333333; text-align: {{ $align }};">
+                {{ $item['name'] ?? '' }}
 
-                <div style="color: #888888;">x {{ e((string) ($item['qty'] ?? '')) }}</div>
+                <div style="color: #888888;">x {{ $item['qty'] ?? '' }}</div>
             </td>
             <td align="end" style="padding: 12px 0; border-bottom: 1px solid #eeeeee; font-size: 14px; color: #333333;">
-                {{ e($item['price_formatted'] ?? '') }}
+                {{ $item['price_formatted'] ?? '' }}
             </td>
         </tr>
     @empty

@@ -1,0 +1,10 @@
+{
+    "errors": [
+        {
+            "id": "<uuid>",
+            "status": 409,
+            "title": "Duplicate unique_id.",
+            "detail": "An event with this unique_id already exists."
+        }
+    ]
+}

@@ -113,8 +113,9 @@ class ContextBuilder
                 'name' => core()->getCurrentChannel()->name,
                 'url'  => route('shop.home.index'),
             ],
-            'locale'    => $locale,
-            'direction' => $this->directionFor($locale),
+            'channel_id' => $channelId,
+            'locale'     => $locale,
+            'direction'  => $this->directionFor($locale),
         ];
     }
 
@@ -140,6 +141,7 @@ class ContextBuilder
             }
 
             $items[] = [
+                'product_id'      => $product->id,
                 'name'            => $item->name,
                 'qty'             => $item->quantity,
                 'price_formatted' => core()->formatPrice($item->price, $cart->cart_currency_code),
@@ -168,6 +170,7 @@ class ContextBuilder
 
         foreach ($order->items as $item) {
             $items[] = [
+                'product_id'      => $item->product_id,
                 'name'            => $item->name,
                 'qty'             => $item->qty_ordered,
                 'price_formatted' => core()->formatPrice($item->price, $order->order_currency_code),

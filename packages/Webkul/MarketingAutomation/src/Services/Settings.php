@@ -2,7 +2,9 @@
 
 namespace Webkul\MarketingAutomation\Services;
 
+use Illuminate\Support\Facades\DB;
 use Webkul\Core\Models\Channel;
+use Webkul\Klaviyo\Models\Connection;
 use Webkul\MarketingAutomation\Enums\RoutingTarget;
 
 class Settings
@@ -76,7 +78,34 @@ class Settings
     {
         $value = $this->config("routing.settings.{$flowTemplateKey}", $channelCode, 'native');
 
-        return RoutingTarget::tryFrom((string) $value) ?? RoutingTarget::Native;
+        $target = RoutingTarget::tryFrom((string) $value) ?? RoutingTarget::Native;
+
+        if ($target === RoutingTarget::Klaviyo && ! $this->klaviyoConnected($channelCode)) {
+            return RoutingTarget::Native;
+        }
+
+        return $target;
+    }
+
+    /**
+     * Whether the channel has an active Klaviyo connection.
+     */
+    protected function klaviyoConnected(string $channelCode): bool
+    {
+        if (! class_exists(Connection::class)) {
+            return false;
+        }
+
+        $channelId = DB::table('channels')->where('code', $channelCode)->value('id');
+
+        if ($channelId === null) {
+            return false;
+        }
+
+        return DB::table('klaviyo_connections')
+            ->where('channel_id', $channelId)
+            ->where('status', 'connected')
+            ->exists();
     }
 
     /**

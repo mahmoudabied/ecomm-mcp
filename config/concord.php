@@ -31,6 +31,7 @@ return [
         Webkul\DataTransfer\Providers\ModuleServiceProvider::class,
         Webkul\GDPR\Providers\ModuleServiceProvider::class,
         Webkul\Inventory\Providers\ModuleServiceProvider::class,
+        Webkul\Klaviyo\Providers\ModuleServiceProvider::class,
         Webkul\Marketing\Providers\ModuleServiceProvider::class,
         Webkul\MarketingAutomation\Providers\ModuleServiceProvider::class,
         Webkul\Notification\Providers\ModuleServiceProvider::class,

@@ -1,0 +1,12 @@
+{
+    "data": [
+        {
+            "type": "account",
+            "id": "ACC1",
+            "attributes": {
+                "company_name": "Acme Store",
+                "timezone": "UTC"
+            }
+        }
+    ]
+}

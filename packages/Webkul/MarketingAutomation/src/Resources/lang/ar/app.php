@@ -186,6 +186,41 @@ return [
 
     'emails' => [
         'unsubscribe' => 'إلغاء الاشتراك من هذه الرسائل',
+
+        'blocks' => [
+            'product-grid-title' => 'قد يعجبك أيضًا',
+        ],
+    ],
+
+    'reports' => [
+        'title'        => 'تقرير التدفق',
+        'from'         => 'من',
+        'to'           => 'إلى',
+        'channel'      => 'قناة البيع',
+        'all-channels' => 'جميع قنوات البيع',
+        'enrolled'     => 'المسجلون',
+        'sent'         => 'المرسلة',
+        'delivered'    => 'المستلمة',
+        'open-rate'    => 'معدل الفتح',
+        'click-rate'   => 'معدل النقر',
+        'converted'    => 'التحويلات',
+        'revenue'      => 'الإيرادات',
+        'step'         => 'الخطوة',
+        'skipped'      => 'المتخطاة',
+        'failed'       => 'الفاشلة',
+        'type'         => 'النوع',
+        'removed'      => 'خطوة محذوفة',
+        'enrolments'   => 'التسجيلات',
+        'journey'      => 'الرحلة',
+
+        'enrolments-grid' => [
+            'id'           => 'المعرف',
+            'email'        => 'البريد الإلكتروني',
+            'phone'        => 'الهاتف',
+            'status'       => 'الحالة',
+            'current-step' => 'الخطوة الحالية',
+            'entered'      => 'تاريخ الدخول',
+        ],
     ],
 
     'shop' => [
@@ -293,6 +328,49 @@ return [
             'any'           => 'أي شرط',
         ],
 
+        'editor' => [
+            'blocks'          => 'الكتل',
+            'copy-default'    => 'نسخ من اللغة الافتراضية',
+            'insert-variable' => 'إدراج متغير',
+            'pick-block'      => 'اختر كتلة لتعديل خصائصها.',
+            'preview'         => 'تحديث المعاينة',
+            'previewing'      => 'جارٍ تحميل المعاينة…',
+            'move-up'         => 'تحريك لأعلى',
+            'move-down'       => 'تحريك لأسفل',
+            'remove'          => 'إزالة',
+
+            'blocks-type' => [
+                'header'        => 'ترويسة',
+                'text'          => 'نص',
+                'image'         => 'صورة',
+                'button'        => 'زر',
+                'product_grid'  => 'شبكة المنتجات',
+                'cart_items'    => 'منتجات السلة',
+                'order_summary' => 'ملخص الطلب',
+                'coupon'        => 'كوبون',
+                'footer'        => 'تذييل',
+            ],
+
+            'fields' => [
+                'title'        => 'العنوان',
+                'logo-url'     => 'رابط الشعار',
+                'content'      => 'المحتوى',
+                'image-url'    => 'رابط الصورة (https)',
+                'alt'          => 'نص بديل',
+                'link'         => 'الرابط',
+                'label'        => 'التسمية',
+                'color'        => 'اللون (hex)',
+                'source'       => 'المصدر',
+                'count'        => 'عدد المنتجات (1-6)',
+                'expires-days' => 'صالح لمدة (أيام)',
+                'footer-text'  => 'نص التذييل',
+            ],
+        ],
+
+        'hints' => [
+            'add-coupon' => 'أضف كتلة كوبون لتقديم خصم',
+        ],
+
         'triggers' => [
             'cart_abandoned'        => 'سلة متروكة',
             'customer_registered'   => 'تسجيل عميل',
@@ -366,6 +444,8 @@ return [
             'template-not-approved'          => 'تحتاج خطوة واتساب هذه إلى قالب معتمد.',
             'no-provider'                    => 'لا يوجد مزود :channel متصل معيّن كافتراضي لأحد قنوات البيع.',
             'transactional-block'            => 'التدفقات المعاملاتية لا يمكنها استخدام كتلة ":block".',
+            'coupon-rule'                    => 'كتلة الكوبون تحتاج إلى قاعدة سلة مع كوبونات مولدة تلقائيًا.',
+            'unknown-block'                  => 'نوع الكتلة ":block" غير موجود.',
             'unknown-step'                   => 'نوع هذه الخطوة غير معروف.',
             'wait-needs-next'                => 'تحتاج خطوة الانتظار هذه إلى خطوة تالية لها.',
             'invalid-fallback-channel'       => 'قناة البديل لهذه الخطوة غير صالحة.',

@@ -3,6 +3,21 @@
         {{ $flow->name }}
     </x-slot>
 
+    <div class="mb-4 flex items-center justify-between">
+        <h1 class="text-xl font-bold">
+            {{ $flow->name }}
+        </h1>
+
+        @if (bouncer()->hasPermission('marketing.automation.reports'))
+            <a
+                href="{{ route('admin.marketing.automation.flows.report', $flow->id) }}"
+                class="secondary-button"
+            >
+                @lang('marketing_automation::app.reports.title')
+            </a>
+        @endif
+    </div>
+
     <v-flow-builder
         :flow='@json($builderFlow)'
         :definition='@json($builderDefinition)'
@@ -349,7 +364,12 @@
 
                             <!-- send_email -->
                             <template v-if="editing.type === 'send_email'">
-                                <v-flow-email-fields :content="editing"></v-flow-email-fields>
+                                <v-flow-email-fields
+                                    :content="editing"
+                                    :flow-id="flow.id"
+                                    :step-key="editingKey"
+                                    :template-key="flow.template_key"
+                                ></v-flow-email-fields>
                             </template>
 
                             <!-- send_sms -->
@@ -408,7 +428,6 @@
                                         v-if="editing.fallback_channel === 'email'"
                                         :content="editing.fallback_step"
                                     ></v-flow-email-fields>
-
                                     <v-flow-sms-fields
                                         v-if="editing.fallback_channel === 'sms'"
                                         :content="editing.fallback_step"
@@ -680,37 +699,25 @@
             id="v-flow-email-fields-template"
         >
             <div class="grid gap-4">
-                <template
+                <div
                     v-for="locale in locales"
                     :key="locale"
                 >
-                    <div>
-                        <label class="mb-1 block text-sm">@lang('marketing_automation::app.flows.steps.subject') (@{{ locale }})</label>
+                    <label class="mb-1 block text-sm">@lang('marketing_automation::app.flows.steps.subject') (@{{ locale }})</label>
 
-                        <input
-                            type="text"
-                            class="flex w-full rounded border bg-white px-2.5 py-2 text-sm dark:bg-gray-900"
-                            v-model="content.subject[locale]"
-                        >
-                    </div>
+                    <input
+                        type="text"
+                        class="flex w-full rounded border bg-white px-2.5 py-2 text-sm dark:bg-gray-900"
+                        v-model="content.subject[locale]"
+                    >
+                </div>
 
-                    <div>
-                        <label class="mb-1 block text-sm">@lang('marketing_automation::app.flows.steps.body') (@{{ locale }})</label>
-
-                        <textarea
-                            rows="5"
-                            class="flex w-full rounded border bg-white px-2.5 py-2 text-sm dark:bg-gray-900"
-                            v-model="textBlock(locale).text"
-                        ></textarea>
-
-                        <p
-                            v-if="content.blocks[locale].length > 1"
-                            class="mt-1 text-xs text-gray-500"
-                        >
-                            + @{{ content.blocks[locale].length - 1 }} block(s)
-                        </p>
-                    </div>
-                </template>
+                <v-automation-email-editor
+                    :content="content"
+                    :flow-id="flowId"
+                    :step-key="stepKey"
+                    :template-key="templateKey"
+                ></v-automation-email-editor>
             </div>
         </script>
 
@@ -840,16 +847,10 @@
             app.component('v-flow-email-fields', {
                 template: '#v-flow-email-fields-template',
 
-                props: ['content'],
+                props: ['content', 'flowId', 'stepKey', 'templateKey'],
 
                 data() {
                     return { locales: flowLocales };
-                },
-
-                methods: {
-                    textBlock(locale) {
-                        return this.content.blocks[locale].find((block) => block.type === 'text');
-                    },
                 },
             });
 
@@ -1476,5 +1477,7 @@
                 },
             });
         </script>
+
+        @include('marketing_automation::admin.flows.partials.email-editor')
     @endPushOnce
 </x-admin::layouts>

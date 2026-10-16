@@ -12,6 +12,7 @@ class MessageRenderer
      */
     public function __construct(
         protected TemplateRenderer $templateRenderer,
+        protected EmailBlockRenderer $emailBlockRenderer,
         protected WhatsAppTemplateRepository $whatsAppTemplateRepository,
     ) {}
 
@@ -32,9 +33,7 @@ class MessageRenderer
 
         $blocks = $this->localizedBlocks($step['blocks'] ?? [], $locale);
 
-        $bodyHtml = collect($blocks)
-            ->map(fn (array $block) => $this->renderBlock($block, $context))
-            ->implode('');
+        $bodyHtml = $this->emailBlockRenderer->render($blocks, $context, $context['direction'] ?? 'ltr');
 
         $unsubscribeUrl = $context['unsubscribe_url'] ?? null;
 
@@ -42,11 +41,11 @@ class MessageRenderer
             $unsubscribeUrl
             && ! in_array('footer', array_column($blocks, 'type'), true)
         ) {
-            $bodyHtml .= view('marketing_automation::emails.blocks.footer', [
-                'text'     => '',
-                'link'     => $unsubscribeUrl,
-                'context'  => $context,
-            ])->render();
+            $bodyHtml .= $this->emailBlockRenderer->render(
+                [['type' => 'footer', 'text' => '']],
+                $context,
+                $context['direction'] ?? 'ltr',
+            );
         }
 
         return [
@@ -104,37 +103,6 @@ class MessageRenderer
             language: $language,
             bodyParams: $bodyParams,
         );
-    }
-
-    /**
-     * Render one email block through its Blade view.
-     *
-     * @param  array<string, mixed>  $block
-     * @param  array<string, mixed>  $context
-     */
-    protected function renderBlock(array $block, array $context): string
-    {
-        $type = (string) ($block['type'] ?? '');
-
-        $view = "marketing_automation::emails.blocks.{$type}";
-
-        if (! view()->exists($view)) {
-            return '';
-        }
-
-        $data = ['context' => $context];
-
-        if ($type === 'footer') {
-            $data['link'] = $context['unsubscribe_url'] ?? null;
-        }
-
-        foreach (['text', 'href', 'label', 'url', 'preheader'] as $key) {
-            if (isset($block[$key])) {
-                $data[$key] = $this->templateRenderer->render((string) $block[$key], $context);
-            }
-        }
-
-        return view($view, $data)->render();
     }
 
     /**

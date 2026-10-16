@@ -15,6 +15,7 @@ use Webkul\MarketingAutomation\Exceptions\RetryableSendException;
 use Webkul\MarketingAutomation\Mail\AutomationMail;
 use Webkul\MarketingAutomation\Models\MessageLog;
 use Webkul\MarketingAutomation\Models\ProviderConnection;
+use Webkul\MarketingAutomation\Rendering\LinkTracker;
 
 class MessageSender
 {
@@ -24,6 +25,7 @@ class MessageSender
     public function __construct(
         protected ProviderManager $providerManager,
         protected Settings $settings,
+        protected LinkTracker $linkTracker,
     ) {}
 
     /**
@@ -39,10 +41,12 @@ class MessageSender
             return;
         }
 
+        $trackedHtml = $this->linkTracker->rewrite($log, (string) $rendered['html'], $unsubscribeUrl);
+
         try {
             Mail::to($log->recipient)->send(new AutomationMail(
                 subjectText: $rendered['subject'],
-                bodyHtml: $rendered['html'],
+                bodyHtml: $trackedHtml,
                 fromAddress: $this->settings->senderAddress($this->channelCode($log)),
                 fromName: $this->settings->senderName($this->channelCode($log)),
                 unsubscribeUrl: $log->is_marketing ? $unsubscribeUrl : null,

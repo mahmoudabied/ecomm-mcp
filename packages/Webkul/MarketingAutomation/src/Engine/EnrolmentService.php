@@ -179,11 +179,12 @@ class EnrolmentService
             'event'    => JourneyEvent::Entered->value,
         ]);
 
-        $this->statsRecorder->increment('enrolled', [
-            'flow_id'    => $flow->id,
-            'step_key'   => $definition->entry(),
-            'channel_id' => $event->channelId,
-        ]);
+        $this->statsRecorder->increment(
+            (int) $flow->id,
+            $definition->entry(),
+            (int) $event->channelId,
+            'enrolled',
+        );
 
         ProcessEnrolmentStep::dispatch($enrolment->id, $token);
 

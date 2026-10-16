@@ -2,6 +2,7 @@
 
 namespace Webkul\MarketingAutomation\Engine\Steps;
 
+use InvalidArgumentException;
 use Webkul\Core\Models\Channel;
 use Webkul\MarketingAutomation\DTOs\OutboundMessage;
 use Webkul\MarketingAutomation\Engine\StepContext;
@@ -17,10 +18,12 @@ use Webkul\MarketingAutomation\Exceptions\RetryableSendException;
 use Webkul\MarketingAutomation\Models\Enrolment;
 use Webkul\MarketingAutomation\Models\MessageLog;
 use Webkul\MarketingAutomation\Rendering\MessageRenderer;
+use Webkul\MarketingAutomation\Services\CouponIssuer;
 use Webkul\MarketingAutomation\Services\MessageSender;
 use Webkul\MarketingAutomation\Services\PolicyResult;
 use Webkul\MarketingAutomation\Services\ProviderManager;
 use Webkul\MarketingAutomation\Services\SendPolicy;
+use Webkul\MarketingAutomation\Services\StatsRecorder;
 use Webkul\MarketingAutomation\Services\UnsubscribeLink;
 
 class SendStep implements StepHandler
@@ -53,6 +56,8 @@ class SendStep implements StepHandler
         protected MessageSender $sender,
         protected ProviderManager $providerManager,
         protected UnsubscribeLink $unsubscribeLink,
+        protected CouponIssuer $couponIssuer,
+        protected StatsRecorder $statsRecorder,
     ) {}
 
     /**
@@ -484,6 +489,7 @@ class SendStep implements StepHandler
 
         $rendered = $this->renderer->renderEmail($step, [
             ...$this->messageContext($log, $context),
+            ...$this->couponContext($log, $step),
             'transactional'   => $context->flow->type === FlowType::Transactional,
             'unsubscribe_url' => $unsubscribeUrl,
         ], $locale);
@@ -544,6 +550,37 @@ class SendStep implements StepHandler
         }
 
         return $renderContext;
+    }
+
+    /**
+     * Issue the coupon a coupon block points at, keyed on the message log so a
+     * retried send reuses the code. A failing rule degrades to a coupon-less
+     * email rather than blocking the message; the validator prevents this.
+     *
+     * @param  array<string, mixed>  $step
+     * @return array<string, mixed>
+     */
+    protected function couponContext(MessageLog $log, array $step): array
+    {
+        $couponBlock = collect((array) ($step['blocks'] ?? []))
+            ->flatMap(fn ($localeBlocks) => (array) $localeBlocks)
+            ->firstWhere('type', 'coupon');
+
+        if ($couponBlock === null) {
+            return [];
+        }
+
+        try {
+            $code = $this->couponIssuer->issue(
+                $log,
+                (int) ($couponBlock['cart_rule_id'] ?? 0),
+                isset($couponBlock['expires_days']) ? (int) $couponBlock['expires_days'] : null,
+            );
+        } catch (InvalidArgumentException) {
+            return [];
+        }
+
+        return ['coupon' => ['code' => $code]];
     }
 
     /**
@@ -632,7 +669,8 @@ class SendStep implements StepHandler
     }
 
     /**
-     * Append an entry to the enrolment's journey log.
+     * Append an entry to the enrolment's journey log and count sent, skipped
+     * and failed deliveries in the daily rollups.
      */
     protected function record(
         Enrolment $enrolment,
@@ -647,6 +685,23 @@ class SendStep implements StepHandler
             'reason'         => $reason,
             'message_log_id' => $messageLogId,
         ]);
+
+        $metric = match ($event) {
+            JourneyEvent::Sent    => 'sent',
+            JourneyEvent::Skipped => 'skipped',
+            JourneyEvent::Failed  => 'failed',
+            default               => null,
+        };
+
+        if ($metric !== null) {
+            $this->statsRecorder->increment(
+                (int) $enrolment->flow_id,
+                substr($stepKey, 0, 20),
+                (int) $enrolment->channel_id,
+                $metric,
+                $event === JourneyEvent::Skipped ? (string) $reason : '',
+            );
+        }
     }
 
     /**

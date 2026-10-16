@@ -1,0 +1,30 @@
+{
+    "data": [
+        {
+            "type": "event",
+            "id": "EV1",
+            "attributes": {
+                "datetime": "2026-10-10T09:30:00+00:00",
+                "timestamp": 1760002200,
+                "event_properties": {},
+                "metric": { "data": { "type": "metric", "id": "METRIC_UNSUB_EMAIL", "attributes": { "name": "Unsubscribed from Email Marketing" } } },
+                "profile": { "data": { "type": "profile", "id": "PRF1", "attributes": { "email": "sara@example.com" } } }
+            }
+        },
+        {
+            "type": "event",
+            "id": "EV2",
+            "attributes": {
+                "datetime": "2026-10-11T11:45:00+00:00",
+                "timestamp": 1760091900,
+                "event_properties": {},
+                "metric": { "data": { "type": "metric", "id": "METRIC_UNSUB_SMS", "attributes": { "name": "Unsubscribed from SMS Marketing" } } },
+                "profile": { "data": { "type": "profile", "id": "PRF2", "attributes": { "email": "omar@example.com", "phone_number": "+966501234567" } } }
+            }
+        }
+    ],
+    "links": {
+        "self": "https://a.klaviyo.com/api/events?filter=any(metric_id,[\"METRIC_UNSUB_EMAIL\",\"METRIC_UNSUB_SMS\"]),greater-than(datetime,2026-10-09T00:00:00%2B00:00)",
+        "next": null
+    }
+}

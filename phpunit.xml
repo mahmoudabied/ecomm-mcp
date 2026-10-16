@@ -39,6 +39,11 @@
         <testsuite name="MarketingAutomation Unit Test">
             <directory suffix="Test.php">packages/Webkul/MarketingAutomation/tests/Unit</directory>
         </testsuite>
+
+        <!-- Klaviyo package testsuites. -->
+        <testsuite name="Klaviyo Feature Test">
+            <directory suffix="Test.php">packages/Webkul/Klaviyo/tests/Feature</directory>
+        </testsuite>
     </testsuites>
 
     <source>

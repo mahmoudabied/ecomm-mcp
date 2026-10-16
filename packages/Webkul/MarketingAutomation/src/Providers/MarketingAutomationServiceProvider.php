@@ -7,10 +7,12 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Webkul\Core\Http\Middleware\NoCacheMiddleware;
+use Webkul\MarketingAutomation\Console\Commands\AuditConsentCommand;
 use Webkul\MarketingAutomation\Console\Commands\DailyTriggersCommand;
 use Webkul\MarketingAutomation\Console\Commands\DetectAbandonedCartsCommand;
 use Webkul\MarketingAutomation\Console\Commands\DispatchDueCommand;
 use Webkul\MarketingAutomation\Console\Commands\InstallCommand;
+use Webkul\MarketingAutomation\Console\Commands\PurgeLogsCommand;
 use Webkul\MarketingAutomation\Services\ConsentService;
 use Webkul\MarketingAutomation\Services\ContactResolver;
 use Webkul\MarketingAutomation\Services\PhoneNormalizer;
@@ -49,6 +51,8 @@ class MarketingAutomationServiceProvider extends ServiceProvider
                 DispatchDueCommand::class,
                 DailyTriggersCommand::class,
                 DetectAbandonedCartsCommand::class,
+                PurgeLogsCommand::class,
+                AuditConsentCommand::class,
             ]);
         }
 
@@ -95,6 +99,10 @@ class MarketingAutomationServiceProvider extends ServiceProvider
 
             $schedule->command('automation:daily-triggers')
                 ->hourly()
+                ->withoutOverlapping();
+
+            $schedule->command('automation:purge-logs')
+                ->daily()
                 ->withoutOverlapping();
         });
     }

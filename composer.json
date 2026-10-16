@@ -86,6 +86,7 @@
             "Webkul\\GDPR\\": "packages/Webkul/GDPR/src",
             "Webkul\\Installer\\": "packages/Webkul/Installer/src",
             "Webkul\\Inventory\\": "packages/Webkul/Inventory/src",
+            "Webkul\\Klaviyo\\": "packages/Webkul/Klaviyo/src",
             "Webkul\\MagicAI\\": "packages/Webkul/MagicAI/src",
             "Webkul\\Marketing\\": "packages/Webkul/Marketing/src",
             "Webkul\\MarketingAutomation\\": "packages/Webkul/MarketingAutomation/src",
@@ -114,7 +115,8 @@
             "Webkul\\DataGrid\\Tests\\": "packages/Webkul/DataGrid/tests",
             "Webkul\\Shop\\Tests\\": "packages/Webkul/Shop/tests",
             "Webkul\\McpServer\\Tests\\": "packages/Webkul/McpServer/tests",
-            "Webkul\\MarketingAutomation\\Tests\\": "packages/Webkul/MarketingAutomation/tests"
+            "Webkul\\MarketingAutomation\\Tests\\": "packages/Webkul/MarketingAutomation/tests",
+            "Webkul\\Klaviyo\\Tests\\": "packages/Webkul/Klaviyo/tests"
         }
     },
     "scripts": {

@@ -1,4 +1,7 @@
-<div class="grid gap-2 text-sm">
+<div
+    id="ma-consent-checkboxes"
+    class="grid gap-2 text-sm"
+>
     <label class="flex items-center gap-2">
         <input
             type="checkbox"

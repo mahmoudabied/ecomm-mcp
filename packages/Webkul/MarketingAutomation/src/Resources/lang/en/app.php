@@ -186,6 +186,41 @@ return [
 
     'emails' => [
         'unsubscribe' => 'Unsubscribe from these emails',
+
+        'blocks' => [
+            'product-grid-title' => 'You may also like',
+        ],
+    ],
+
+    'reports' => [
+        'title'        => 'Flow report',
+        'from'         => 'From',
+        'to'           => 'To',
+        'channel'      => 'Sales channel',
+        'all-channels' => 'All sales channels',
+        'enrolled'     => 'Enrolled',
+        'sent'         => 'Sent',
+        'delivered'    => 'Delivered',
+        'open-rate'    => 'Open rate',
+        'click-rate'   => 'Click rate',
+        'converted'    => 'Converted',
+        'revenue'      => 'Revenue',
+        'step'         => 'Step',
+        'skipped'      => 'Skipped',
+        'failed'       => 'Failed',
+        'type'         => 'Type',
+        'removed'      => 'Removed step',
+        'enrolments'   => 'Enrolments',
+        'journey'      => 'Journey',
+
+        'enrolments-grid' => [
+            'id'           => 'ID',
+            'email'        => 'Email',
+            'phone'        => 'Phone',
+            'status'       => 'Status',
+            'current-step' => 'Current step',
+            'entered'      => 'Entered',
+        ],
     ],
 
     'shop' => [
@@ -293,6 +328,49 @@ return [
             'any'           => 'Any condition',
         ],
 
+        'editor' => [
+            'blocks'          => 'Blocks',
+            'copy-default'    => 'Copy from default locale',
+            'insert-variable' => 'Insert variable',
+            'pick-block'      => 'Select a block to edit its properties.',
+            'preview'         => 'Refresh preview',
+            'previewing'      => 'Loading preview…',
+            'move-up'         => 'Move up',
+            'move-down'       => 'Move down',
+            'remove'          => 'Remove',
+
+            'blocks-type' => [
+                'header'        => 'Header',
+                'text'          => 'Text',
+                'image'         => 'Image',
+                'button'        => 'Button',
+                'product_grid'  => 'Product grid',
+                'cart_items'    => 'Cart items',
+                'order_summary' => 'Order summary',
+                'coupon'        => 'Coupon',
+                'footer'        => 'Footer',
+            ],
+
+            'fields' => [
+                'title'        => 'Title',
+                'logo-url'     => 'Logo URL',
+                'content'      => 'Content',
+                'image-url'    => 'Image URL (https)',
+                'alt'          => 'Alt text',
+                'link'         => 'Link',
+                'label'        => 'Label',
+                'color'        => 'Colour (hex)',
+                'source'       => 'Source',
+                'count'        => 'Products (1-6)',
+                'expires-days' => 'Valid for (days)',
+                'footer-text'  => 'Footer text',
+            ],
+        ],
+
+        'hints' => [
+            'add-coupon' => 'Add a coupon block to offer a discount',
+        ],
+
         'triggers' => [
             'cart_abandoned'        => 'Cart abandoned',
             'customer_registered'   => 'Customer registered',
@@ -366,6 +444,8 @@ return [
             'template-not-approved'          => 'This WhatsApp step needs an approved template.',
             'no-provider'                    => 'No connected :channel provider is set as default for one of the sales channels.',
             'transactional-block'            => 'Transactional flows cannot use the ":block" block.',
+            'coupon-rule'                    => 'The coupon block needs a cart rule with auto-generated coupons.',
+            'unknown-block'                  => 'The ":block" block type does not exist.',
             'unknown-step'                   => 'This step has an unknown type.',
             'wait-needs-next'                => 'This wait step needs a following step.',
             'invalid-fallback-channel'       => 'The fallback channel of this step is invalid.',

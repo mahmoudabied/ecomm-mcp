@@ -20,6 +20,7 @@ use Webkul\FPC\Providers\FPCServiceProvider;
 use Webkul\GDPR\Providers\GDPRServiceProvider;
 use Webkul\Installer\Providers\InstallerServiceProvider;
 use Webkul\Inventory\Providers\InventoryServiceProvider;
+use Webkul\Klaviyo\Providers\KlaviyoServiceProvider;
 use Webkul\MagicAI\Providers\MagicAIServiceProvider;
 use Webkul\Marketing\Providers\MarketingServiceProvider;
 use Webkul\MarketingAutomation\Providers\MarketingAutomationServiceProvider;
@@ -70,6 +71,7 @@ return [
     McpServiceProvider::class,
     MarketingServiceProvider::class,
     MarketingAutomationServiceProvider::class,
+    KlaviyoServiceProvider::class,
     NotificationServiceProvider::class,
     PaymentServiceProvider::class,
     PaypalServiceProvider::class,

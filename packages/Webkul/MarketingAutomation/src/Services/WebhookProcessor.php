@@ -9,9 +9,7 @@ use Webkul\MarketingAutomation\DTOs\StatusUpdate;
 use Webkul\MarketingAutomation\Enums\ConsentSource;
 use Webkul\MarketingAutomation\Enums\MessageChannel;
 use Webkul\MarketingAutomation\Enums\MessageEventType;
-use Webkul\MarketingAutomation\Enums\MessageStatus;
 use Webkul\MarketingAutomation\Models\Contact;
-use Webkul\MarketingAutomation\Models\MessageEvent;
 use Webkul\MarketingAutomation\Models\MessageLog;
 use Webkul\MarketingAutomation\Models\ProviderConnection;
 use Webkul\MarketingAutomation\Repositories\ProviderConnectionRepository;
@@ -24,6 +22,7 @@ class WebhookProcessor
     public function __construct(
         protected ProviderConnectionRepository $providerConnectionRepository,
         protected ConsentService $consentService,
+        protected MessageEvents $messageEvents,
     ) {}
 
     /**
@@ -43,7 +42,16 @@ class WebhookProcessor
                 continue;
             }
 
-            $this->applyStatus($log, $update);
+            $type = $this->eventTypeFor($update->status);
+
+            if ($type === null) {
+                continue;
+            }
+
+            $this->messageEvents->record((string) $log->uuid, $type, [
+                'error_code'    => $update->errorCode,
+                'error_message' => $update->errorMessage !== null ? Str::limit($update->errorMessage, 250) : null,
+            ]);
         }
     }
 
@@ -72,50 +80,18 @@ class WebhookProcessor
     }
 
     /**
-     * Apply one provider status onto the log and append the event.
+     * Map a provider status onto the message event type it records; unknown
+     * statuses are silently dropped.
      */
-    protected function applyStatus(MessageLog $log, StatusUpdate $update): void
+    protected function eventTypeFor(string $status): ?MessageEventType
     {
-        $status = MessageStatus::tryFrom($update->status);
-
-        if ($status === null || $log->status === $status) {
-            return;
-        }
-
-        $attributes = ['status' => $status->value];
-
-        if ($status === MessageStatus::Delivered) {
-            $attributes['delivered_at'] = $update->occurredAt;
-        }
-
-        if ($status === MessageStatus::Failed) {
-            $attributes['error_code'] = $update->errorCode;
-            $attributes['error_message'] = $update->errorMessage !== null ? Str::limit($update->errorMessage, 250) : null;
-        }
-
-        $log->update($attributes);
-
-        MessageEvent::query()->create([
-            'message_log_id' => $log->id,
-            'type'           => $this->eventTypeFor($status)->value,
-            'meta'           => array_filter([
-                'error_code'    => $update->errorCode,
-                'error_message' => $update->errorMessage !== null ? Str::limit($update->errorMessage, 250) : null,
-            ]),
-            'occurred_at'    => $update->occurredAt,
-        ]);
-    }
-
-    /**
-     * Map a message status onto its journey event type.
-     */
-    protected function eventTypeFor(MessageStatus $status): MessageEventType
-    {
-        return match ($status) {
-            MessageStatus::Delivered => MessageEventType::Delivered,
-            MessageStatus::Read      => MessageEventType::Read,
-            MessageStatus::Failed    => MessageEventType::Failed,
-            default                  => MessageEventType::Sent,
+        return match (strtolower($status)) {
+            'sent'      => MessageEventType::Sent,
+            'delivered' => MessageEventType::Delivered,
+            'read'      => MessageEventType::Read,
+            'failed'    => MessageEventType::Failed,
+            'bounced'   => MessageEventType::Bounced,
+            default     => null,
         };
     }
 

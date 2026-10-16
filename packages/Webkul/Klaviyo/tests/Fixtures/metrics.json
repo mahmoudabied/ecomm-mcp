@@ -1,0 +1,19 @@
+{
+    "data": [
+        {
+            "type": "metric",
+            "id": "METRIC_PLACE",
+            "attributes": { "name": "Placed Order", "integration": { "category": "api", "key": "api" } }
+        },
+        {
+            "type": "metric",
+            "id": "METRIC_UNSUB_EMAIL",
+            "attributes": { "name": "Unsubscribed from Email Marketing", "integration": { "category": "klaviyo", "key": "klaviyo" } }
+        },
+        {
+            "type": "metric",
+            "id": "METRIC_UNSUB_SMS",
+            "attributes": { "name": "Unsubscribed from SMS Marketing", "integration": { "category": "klaviyo", "key": "klaviyo" } }
+        }
+    ]
+}

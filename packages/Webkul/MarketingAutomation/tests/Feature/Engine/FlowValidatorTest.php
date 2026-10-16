@@ -152,6 +152,29 @@ it('rejects transactional flows that use coupon or product grid blocks', functio
     expect($errors['steps.s1'] ?? [])->not->toBeEmpty();
 });
 
+it('rejects email steps carrying an unknown block type', function () {
+    $flow = makeFlowWithType(FlowType::Marketing);
+
+    $errors = app(FlowValidator::class)->validate($flow, [
+        'entry' => 's1',
+        'steps' => [
+            's1' => [
+                'type'    => 'send_email',
+                'subject' => ['en' => 'Hi'],
+                'blocks'  => ['en' => [
+                    ['type' => 'text', 'text' => 'x'],
+                    ['type' => 'typo_block'],
+                ]],
+                'next' => 's2',
+            ],
+            's2' => ['type' => 'exit'],
+        ],
+    ]);
+
+    expect($errors['steps.s1'] ?? [])->not->toBeEmpty()
+        ->and($errors['steps.s1'])->toContain(trans('marketing_automation::app.flows.validation.unknown-block', ['block' => 'typo_block']));
+});
+
 it('accepts a fully valid graph', function () {
     $flow = makeFlowWithType(FlowType::Marketing);
 

@@ -1,0 +1,10 @@
+{
+    "errors": [
+        {
+            "id": "<uuid>",
+            "status": 401,
+            "title": "Missing or invalid API key.",
+            "detail": "The API key is missing, malformed, or invalid."
+        }
+    ]
+}

@@ -5,6 +5,7 @@ use Webkul\MarketingAutomation\Http\Controllers\Admin\FlowController;
 use Webkul\MarketingAutomation\Http\Controllers\Admin\FlowTestController;
 use Webkul\MarketingAutomation\Http\Controllers\Admin\HealthController;
 use Webkul\MarketingAutomation\Http\Controllers\Admin\ProviderController;
+use Webkul\MarketingAutomation\Http\Controllers\Admin\ReportController;
 
 Route::prefix('marketing/automation')->group(function () {
     /**
@@ -56,7 +57,21 @@ Route::prefix('marketing/automation')->group(function () {
             ->name('admin.marketing.automation.flows.test');
 
         Route::get('{flow}/preview/{stepKey}', 'preview')->name('admin.marketing.automation.flows.preview');
+
+        Route::post('{flow}/preview', 'previewDraft')->name('admin.marketing.automation.flows.preview_draft');
     });
+
+    /**
+     * Report routes.
+     */
+    Route::controller(ReportController::class)->prefix('flows')->group(function () {
+        Route::get('{flow}/report', 'report')->name('admin.marketing.automation.flows.report');
+
+        Route::get('{flow}/enrolments', 'enrolments')->name('admin.marketing.automation.flows.enrolments');
+    });
+
+    Route::get('enrolments/{enrolment}/journey', [ReportController::class, 'journey'])
+        ->name('admin.marketing.automation.enrolments.journey');
 
     /**
      * Health route (also linked as a tab from the providers page).

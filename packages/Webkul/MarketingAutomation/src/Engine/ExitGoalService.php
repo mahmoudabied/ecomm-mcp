@@ -61,11 +61,12 @@ class ExitGoalService
             'reason'       => 'goal_met',
         ]);
 
-        $this->statsRecorder->increment('converted', [
-            'flow_id'    => $enrolment->flow_id,
-            'step_key'   => (string) $enrolment->current_step_key,
-            'channel_id' => $enrolment->channel_id,
-        ]);
+        $this->statsRecorder->increment(
+            (int) $enrolment->flow_id,
+            (string) $enrolment->current_step_key,
+            (int) $enrolment->channel_id,
+            'converted',
+        );
 
         Event::dispatch('marketing_automation.enrolment.finish.after', [$enrolment]);
     }

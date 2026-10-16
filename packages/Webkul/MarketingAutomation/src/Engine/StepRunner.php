@@ -13,6 +13,7 @@ use Webkul\MarketingAutomation\Enums\StepType;
 use Webkul\MarketingAutomation\Models\Enrolment;
 use Webkul\MarketingAutomation\Rendering\ContextBuilder;
 use Webkul\MarketingAutomation\Services\Settings;
+use Webkul\MarketingAutomation\Services\StatsRecorder;
 
 class StepRunner
 {
@@ -38,6 +39,7 @@ class StepRunner
     public function __construct(
         protected ContextBuilder $contextBuilder,
         protected Settings $settings,
+        protected StatsRecorder $statsRecorder,
     ) {}
 
     /**
@@ -265,6 +267,14 @@ class StepRunner
                 'event'    => JourneyEvent::Skipped->value,
                 'reason'   => SkipReason::Expired->value,
             ]);
+
+            $this->statsRecorder->increment(
+                (int) $enrolment->flow_id,
+                $stepKey,
+                (int) $enrolment->channel_id,
+                'skipped',
+                SkipReason::Expired->value,
+            );
 
             if ($nextKey === '') {
                 $this->complete($enrolment);

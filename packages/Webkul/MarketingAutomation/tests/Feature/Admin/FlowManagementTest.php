@@ -15,24 +15,26 @@ use Webkul\User\Models\Role;
 use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\get;
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\post;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\putJson;
 
 function flowsEndpoint(string $action, ...$params): string
 {
     $routes = [
-        'index'      => 'admin.marketing.automation.flows.index',
-        'templates'  => 'admin.marketing.automation.flows.templates',
-        'store'      => 'admin.marketing.automation.flows.store',
-        'edit'       => 'admin.marketing.automation.flows.edit',
-        'update'     => 'admin.marketing.automation.flows.update',
-        'activate'   => 'admin.marketing.automation.flows.activate',
-        'pause'      => 'admin.marketing.automation.flows.pause',
-        'resume'     => 'admin.marketing.automation.flows.resume',
-        'duplicate'  => 'admin.marketing.automation.flows.duplicate',
-        'delete'     => 'admin.marketing.automation.flows.delete',
-        'test'       => 'admin.marketing.automation.flows.test',
-        'preview'    => 'admin.marketing.automation.flows.preview',
+        'index'         => 'admin.marketing.automation.flows.index',
+        'templates'     => 'admin.marketing.automation.flows.templates',
+        'store'         => 'admin.marketing.automation.flows.store',
+        'edit'          => 'admin.marketing.automation.flows.edit',
+        'update'        => 'admin.marketing.automation.flows.update',
+        'activate'      => 'admin.marketing.automation.flows.activate',
+        'pause'         => 'admin.marketing.automation.flows.pause',
+        'resume'        => 'admin.marketing.automation.flows.resume',
+        'duplicate'     => 'admin.marketing.automation.flows.duplicate',
+        'delete'        => 'admin.marketing.automation.flows.delete',
+        'test'          => 'admin.marketing.automation.flows.test',
+        'preview'       => 'admin.marketing.automation.flows.preview',
+        'preview_draft' => 'admin.marketing.automation.flows.preview_draft',
     ];
 
     return route($routes[$action], ...$params);
@@ -265,4 +267,23 @@ it('updates the draft definition of a flow', function () {
 
     // MySQL normalises JSON key order, so compare structurally.
     expect($flow->refresh()->draft_definition)->toEqualCanonicalizing($definition);
+});
+
+it('previews an unsaved draft step for the block editor', function () {
+    $this->loginAsAdmin();
+
+    $flow = Flow::factory()->create();
+
+    $step = [
+        'type'    => 'send_email',
+        'subject' => ['en' => 'Draft subject'],
+        'blocks'  => ['en' => [['type' => 'text', 'text' => 'Hello editor']]],
+    ];
+
+    post(flowsEndpoint('preview_draft', $flow->id), [
+        'step'   => $step,
+        'locale' => 'en',
+    ])
+        ->assertOk()
+        ->assertSee('Hello editor', false);
 });

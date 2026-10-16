@@ -675,14 +675,14 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Tests for US5 (write first)
 
-- [ ] T107 [P] [US5] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Content/EmailBlocksTest.php`:
+- [X] T107 [P] [US5] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Content/EmailBlocksTest.php`:
   - each block type renders (header, text, image, button, product_grid, cart_items, order_summary, coupon, footer) with the given props
   - merchant text containing `<script>` is escaped
   - an Arabic locale version → `dir="rtl"` on the wrapper and Arabic subject used (US5-AS2)
   - a missing Arabic version → default locale content
   - a missing first name with fallback → fallback text (US5-AS3)
   - a button href only accepts http(s) URLs or whitelisted variables (`{{ cart.restore_url }}`); `javascript:` becomes `#`
-- [ ] T108 [P] [US5] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Content/CouponTest.php`:
+- [X] T108 [P] [US5] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Content/CouponTest.php`:
   - a coupon block tied to a cart rule with `coupon_type=1` (specific) and `use_auto_generation=1`; check the column names in the CartRule migrations
   - sending to 2 customers → 2 different codes in `cart_rule_coupons` with `usage_limit=1`, `usage_per_customer=1` (US5-AS1)
   - retrying the same MessageLog reuses its `coupon_code` (no second coupon)
@@ -690,7 +690,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Implementation for US5
 
-- [ ] T109 [US5] Create `packages/Webkul/MarketingAutomation/src/Rendering/EmailBlockRenderer.php` with `render(array $blocks, array $context, string $direction): string`. Each block maps to a Blade view `marketing_automation::emails.blocks.{type}` in `packages/Webkul/MarketingAutomation/src/Resources/views/emails/blocks/{type}.blade.php`. The views receive **pre-rendered, pre-escaped** values and use only `{{ }}` echo (auto-escaped), except an explicitly whitelisted `$html` from the text block, which is built as `nl2br(e(TemplateRenderer::render(...)))`.
+- [X] T109 [US5] Create `packages/Webkul/MarketingAutomation/src/Rendering/EmailBlockRenderer.php` with `render(array $blocks, array $context, string $direction): string`. Each block maps to a Blade view `marketing_automation::emails.blocks.{type}` in `packages/Webkul/MarketingAutomation/src/Resources/views/emails/blocks/{type}.blade.php`. The views receive **pre-rendered, pre-escaped** values and use only `{{ }}` echo (auto-escaped), except an explicitly whitelisted `$html` from the text block, which is built as `nl2br(e(TemplateRenderer::render(...)))`.
   - Block props:
     - header: logo_url?, title
     - text: content
@@ -703,21 +703,21 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
     - footer: text (an unsubscribe link is auto-appended for marketing)
   - Use table-based markup with inline styles; alignment is `text-align: {{ $direction === 'rtl' ? 'right' : 'left' }}`.
   - Move the T070 block rendering (text, button, cart_items, order_summary, footer) into this class unchanged, add the remaining block types, and have `MessageRenderer::renderEmail` call this class.
-- [ ] T110 [US5] Create `packages/Webkul/MarketingAutomation/src/Rendering/CouponIssuer.php` with `issue(MessageLog $log, int $cartRuleId, ?int $expiresDays): string`. If `$log->coupon_code` is set, return it. Otherwise load the cart rule; if it doesn't allow auto-generation, throw (the validator also checks this). Generate a code with `CartRuleCouponRepository::getRandomString('alphanumeric', 10)` (check the valid format keys in its `$charset`) with prefix `MA-`. Create a `cart_rule_coupons` row `{cart_rule_id, code, usage_limit: 1, usage_per_customer: 1, is_primary: 0, type: 1 (check the column meaning), expired_at: now()+expiresDays or the rule's ends_till}`, save `$log->coupon_code`, and return it. Set `context.coupon.code` before rendering the blocks. Add the validator rule to `FlowValidator` (T061): every coupon block's cart rule exists and has auto generation on. In the builder (T083/T112), show a hint on the abandoned-cart template's s5 card: "Add a coupon block to offer a discount" (trans key `marketing_automation::app.flows.hints.add-coupon`).
-- [ ] T111 [US5] Create `packages/Webkul/MarketingAutomation/src/Rendering/Recommendations.php` with `forContext(array $context, string $source, int $count, int $channelId): array` returning `[{name, price_formatted, image_url, url}]`.
+- [X] T110 [US5] Create `packages/Webkul/MarketingAutomation/src/Rendering/CouponIssuer.php` with `issue(MessageLog $log, int $cartRuleId, ?int $expiresDays): string`. If `$log->coupon_code` is set, return it. Otherwise load the cart rule; if it doesn't allow auto-generation, throw (the validator also checks this). Generate a code with `CartRuleCouponRepository::getRandomString('alphanumeric', 10)` (check the valid format keys in its `$charset`) with prefix `MA-`. Create a `cart_rule_coupons` row `{cart_rule_id, code, usage_limit: 1, usage_per_customer: 1, is_primary: 0, type: 1 (check the column meaning), expired_at: now()+expiresDays or the rule's ends_till}`, save `$log->coupon_code`, and return it. Set `context.coupon.code` before rendering the blocks. Add the validator rule to `FlowValidator` (T061): every coupon block's cart rule exists and has auto generation on. In the builder (T083/T112), show a hint on the abandoned-cart template's s5 card: "Add a coupon block to offer a discount" (trans key `marketing_automation::app.flows.hints.add-coupon`).
+- [X] T111 [US5] Create `packages/Webkul/MarketingAutomation/src/Rendering/Recommendations.php` with `forContext(array $context, string $source, int $count, int $channelId): array` returning `[{name, price_formatted, image_url, url}]`.
   - `related`: `product_relations` of cart/order products
   - `upsell`: `product_up_sells`
   - `bestsellers`: top `order_items.product_id` by qty in the last 90 days, within the same categories as the cart/order items, falling back to overall
   - Exclude products already in the cart/order and non-saleable ones. Use the product image helper (`product_image()->getProductBaseImage($product)`; check `packages/Webkul/Product/src/ProductImage.php`) and `route('shop.product_or_category.index', $product->url_key)`; check the route name with `php artisan route:list --name=product`.
-- [ ] T112 [US5] Create the email block editor as an inline Vue component `v-automation-email-editor` in `packages/Webkul/MarketingAutomation/src/Resources/views/admin/flows/partials/email-editor.blade.php`, and include it in the email step drawer of `admin/flows/edit.blade.php` (T083), replacing the textarea:
+- [X] T112 [US5] Create the email block editor as an inline Vue component `v-automation-email-editor` in `packages/Webkul/MarketingAutomation/src/Resources/views/admin/flows/partials/email-editor.blade.php`, and include it in the email step drawer of `admin/flows/edit.blade.php` (T083), replacing the textarea:
   - a left palette of block types
   - a middle sortable list of blocks (up/down buttons are enough, no drag library)
   - a right props form per selected block
   - a locale tabs bar (from `core()->getAllLocales()`) with "Copy from default locale"
   - a variable picker dropdown inserting `{{ path | default: "" }}` tokens from `TemplateRenderer::variables()`
   - a live preview iframe that POSTs the current blocks to `admin.marketing.automation.flows.preview` (extend the preview to accept a draft step payload `POST` with `{step, locale}`; add the route `POST flows/{id}/preview` named `admin.marketing.automation.flows.preview_draft`)
-- [ ] T113 [US5] SMS and WhatsApp per-locale: make sure `MessageRenderer::renderText` and `renderWhatsApp` select the locale version with the default-locale fallback, and that the `whatsapp` step stores `language[locale] = template language code`. In the builder (T083) add locale tabs for SMS body and WhatsApp language selection. Add a case to `EmailBlocksTest` (T107) or a new `packages/Webkul/MarketingAutomation/tests/Feature/Content/LocaleSelectionTest.php` for SMS: an Arabic contact gets the Arabic body.
-- [ ] T114 [US5] Run the US5 tests and fix until green: `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/Content`. Run pint.
+- [X] T113 [US5] SMS and WhatsApp per-locale: make sure `MessageRenderer::renderText` and `renderWhatsApp` select the locale version with the default-locale fallback, and that the `whatsapp` step stores `language[locale] = template language code`. In the builder (T083) add locale tabs for SMS body and WhatsApp language selection. Add a case to `EmailBlocksTest` (T107) or a new `packages/Webkul/MarketingAutomation/tests/Feature/Content/LocaleSelectionTest.php` for SMS: an Arabic contact gets the Arabic body.
+- [X] T114 [US5] Run the US5 tests and fix until green: `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/Content`. Run pint.
 
 ---
 
@@ -728,7 +728,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Tests for US6 (write first)
 
-- [ ] T115 [P] [US6] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Reporting/TrackingTest.php`:
+- [X] T115 [P] [US6] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Reporting/TrackingTest.php`:
   - email HTML links are rewritten to `/automation/t/c/{uuid}.{sig}/{hash}` and the pixel is appended (marketing and transactional both tracked)
   - GET click → 302 to the original URL, a `clicked` event, and `clicked_at` set
   - an unknown hash → 404 (no open redirect)
@@ -736,14 +736,14 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - GET open pixel → `image/gif`, an `opened` event, and only the first open sets `opened_at`
   - a Twilio status webhook `delivered` → log `delivered`, `delivered_at`; `failed` with ErrorCode 30003 → `failed` with error stored (US6-AS2)
   - a Meta status `read` → `read`
-- [ ] T116 [P] [US6] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Reporting/AttributionTest.php`:
+- [X] T116 [P] [US6] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Reporting/AttributionTest.php`:
   - a click 2 days before the order → attributed to that flow/step with revenue = `base_grand_total` (US6-AS1)
   - a click 6 days before (window 5 d) → not attributed
   - clicks in 2 flows → the latest click wins, and exactly 1 attribution row
   - an SMS delivered 10 h before with no click → attributed (model `delivered`); 30 h before → not
   - the same order event twice → still 1 row
   - the report endpoint sums revenue equal to the attribution rows over a date range (SC-007)
-- [ ] T117 [P] [US6] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Reporting/ReportTest.php`:
+- [X] T117 [P] [US6] Feature test `packages/Webkul/MarketingAutomation/tests/Feature/Reporting/ReportTest.php`:
   - run the abandoned cart flow for 4 contacts with mixed outcomes (1 converted, 1 skipped no_consent, 1 failed, 1 completed); `GET .flows.report` returns matching per-step counts and `skipped_by_reason`
   - the date range filter works, and channel filter works
   - journey endpoint lists events in order with masked recipient (`+96650****567`, `s***@example.com`)
@@ -751,24 +751,24 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Implementation for US6
 
-- [ ] T118 [US6] Replace the stubs:
+- [X] T118 [US6] Replace the stubs:
   - Implement `packages/Webkul/MarketingAutomation/src/Services/StatsRecorder.php` with `increment(int $flowId, string $stepKey, int $channelId, string $metric, string $skipReason = '', int $by = 1, float $revenue = 0): void`. It uses `DB::table('automation_step_stats')->upsert([...], ['date','flow_id','step_key','channel_id','metric','skip_reason'], ['count' => DB::raw('count + '.$by), 'revenue' => DB::raw('revenue + '.$revenue)])`, with date = today in the channel tz. Always also increment flow-level `step_key='_flow'` for `enrolled` and `converted`.
   - Call it everywhere a journey event is written: sent/skipped/failed/deferred-not-counted. Also from status updates (delivered/opened/clicked/unsubscribed/failed) counting **first occurrence only** per log.
   - Implement `packages/Webkul/MarketingAutomation/src/Services/MessageEvents.php` with `record(string $messageUuid, MessageEventType $type, array $meta = []): void`. It dispatches the job `packages/Webkul/MarketingAutomation/src/Jobs/RecordMessageEvent.php`, which inserts a MessageEvent, sets the first-time timestamps (`opened_at`, `clicked_at`, `delivered_at`), updates status monotonically (never downgrade read → delivered → sent), increments stats on first occurrence, and dispatches `marketing_automation.message.status.after`.
-- [ ] T119 [US6] Create `packages/Webkul/MarketingAutomation/src/Rendering/LinkTracker.php` with `rewrite(MessageLog $log, string $html): string`. It parses `href="..."` with a regex or DOMDocument for http(s) links, skipping the unsubscribe URL. For each link it stores `links[hash] = url` with `hash = substr(sha1(url), 0, 12)`, replaces the href with `route('automation.track.click', [$log->uuid.'.'.$sig, $hash])`, appends `<img src="{route automation.track.open}" width="1" height="1" alt="">` before `</body>`, and saves `$log->links`. Sig = first 16 chars of the HMAC of the uuid. Call it in MessageSender before sending email. For SMS/WhatsApp, rewrite `cart.restore_url` to include `?m={uuid}` so restore clicks are tracked (T091).
-- [ ] T120 [US6] Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/TrackingController.php` `open($token)` and `click($token, $hash)` per contracts/storefront-public-http.md § Tracking. Add routes in `public-routes.php` named `automation.track.open` (`GET automation/t/o/{token}.gif`) and `automation.track.click` (`GET automation/t/c/{token}/{hash}`). The open response is a 43-byte transparent GIF (`base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')`) with `Cache-Control: no-store`.
-- [ ] T121 [US6] Fill in `ProcessWebhook::applyStatusUpdates()` (T102): for each StatusUpdate, find the MessageLog by `(provider_connection_id, provider_message_id)` and call `MessageEvents::record` with the mapped type. For `failed`, also store `error_code/error_message` on the log.
-- [ ] T122 [US6] Create `packages/Webkul/MarketingAutomation/src/Services/AttributionService.php` with `attribute(Order $order): ?Attribution`. Called from `OrderListener::placed` (queued job is fine). Resolve contact ids for the order (customer_id or customer_email in the channel). Find the latest MessageLog with `clicked_at >= order.created_at - clickWindowHours` among those contacts, not a test. If there is none, find the latest sms/whatsapp log with `delivered_at >= order.created_at - deliveredWindowHours` and `clicked_at` null. Insert an Attribution (catch the unique violation → return the existing one) with revenue = `base_grand_total` and currency = `base_currency_code`. Then `StatsRecorder::increment(flow, step, channel, 'converted', revenue: …)`. Make sure ExitGoalService's `converted` increment (T090) does NOT add revenue, so revenue is only counted here.
-- [ ] T123 [US6] Create `packages/Webkul/MarketingAutomation/src/Repositories/StepStatRepository.php` with `report(int $flowId, Carbon $from, Carbon $to, ?int $channelId): array`. It sums rows grouped by step_key and metric into the shape from contracts/admin-http.md § Reports. Step types come from the flow's current version definition; steps that exist only in older versions are listed with type `removed`. Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Admin/ReportController.php` with `report`, `enrolments` (DataGrid `packages/Webkul/MarketingAutomation/src/DataGrids/EnrolmentDataGrid.php`: contact email/phone masked, status, created_at, current step) and `journey`. Permission `marketing.automation.reports`. Add routes per contracts.
-- [ ] T124 [US6] Create the report UI `packages/Webkul/MarketingAutomation/src/Resources/views/admin/flows/report.blade.php`, linked as a "Report" tab/button on the edit page:
+- [X] T119 [US6] Create `packages/Webkul/MarketingAutomation/src/Rendering/LinkTracker.php` with `rewrite(MessageLog $log, string $html): string`. It parses `href="..."` with a regex or DOMDocument for http(s) links, skipping the unsubscribe URL. For each link it stores `links[hash] = url` with `hash = substr(sha1(url), 0, 12)`, replaces the href with `route('automation.track.click', [$log->uuid.'.'.$sig, $hash])`, appends `<img src="{route automation.track.open}" width="1" height="1" alt="">` before `</body>`, and saves `$log->links`. Sig = first 16 chars of the HMAC of the uuid. Call it in MessageSender before sending email. For SMS/WhatsApp, rewrite `cart.restore_url` to include `?m={uuid}` so restore clicks are tracked (T091).
+- [X] T120 [US6] Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/TrackingController.php` `open($token)` and `click($token, $hash)` per contracts/storefront-public-http.md § Tracking. Add routes in `public-routes.php` named `automation.track.open` (`GET automation/t/o/{token}.gif`) and `automation.track.click` (`GET automation/t/c/{token}/{hash}`). The open response is a 43-byte transparent GIF (`base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')`) with `Cache-Control: no-store`.
+- [X] T121 [US6] Fill in `ProcessWebhook::applyStatusUpdates()` (T102): for each StatusUpdate, find the MessageLog by `(provider_connection_id, provider_message_id)` and call `MessageEvents::record` with the mapped type. For `failed`, also store `error_code/error_message` on the log.
+- [X] T122 [US6] Create `packages/Webkul/MarketingAutomation/src/Services/AttributionService.php` with `attribute(Order $order): ?Attribution`. Called from `OrderListener::placed` (queued job is fine). Resolve contact ids for the order (customer_id or customer_email in the channel). Find the latest MessageLog with `clicked_at >= order.created_at - clickWindowHours` among those contacts, not a test. If there is none, find the latest sms/whatsapp log with `delivered_at >= order.created_at - deliveredWindowHours` and `clicked_at` null. Insert an Attribution (catch the unique violation → return the existing one) with revenue = `base_grand_total` and currency = `base_currency_code`. Then `StatsRecorder::increment(flow, step, channel, 'converted', revenue: …)`. Make sure ExitGoalService's `converted` increment (T090) does NOT add revenue, so revenue is only counted here.
+- [X] T123 [US6] Create `packages/Webkul/MarketingAutomation/src/Repositories/StepStatRepository.php` with `report(int $flowId, Carbon $from, Carbon $to, ?int $channelId): array`. It sums rows grouped by step_key and metric into the shape from contracts/admin-http.md § Reports. Step types come from the flow's current version definition; steps that exist only in older versions are listed with type `removed`. Create `packages/Webkul/MarketingAutomation/src/Http/Controllers/Admin/ReportController.php` with `report`, `enrolments` (DataGrid `packages/Webkul/MarketingAutomation/src/DataGrids/EnrolmentDataGrid.php`: contact email/phone masked, status, created_at, current step) and `journey`. Permission `marketing.automation.reports`. Add routes per contracts.
+- [X] T124 [US6] Create the report UI `packages/Webkul/MarketingAutomation/src/Resources/views/admin/flows/report.blade.php`, linked as a "Report" tab/button on the edit page:
   - a date range picker (defaults to the last 30 days) and channel filter
   - KPI tiles: enrolled, sent, delivered, open rate, click rate, converted, revenue
   - a per-step table with all metrics and a skipped breakdown tooltip
   - the enrolments DataGrid; clicking a row opens a journey drawer that fetches the journey endpoint and renders a timeline with reason texts and provider error messages
 
   No new chart library; tiles and tables only.
-- [ ] T125 [US6] Create `packages/Webkul/MarketingAutomation/src/Console/Commands/PurgeLogsCommand.php` (`automation:purge-logs`), scheduled `daily()`. Cutoff = now - `Settings::retentionMonths()`. Delete in batches of 1000 (loop `->limit(1000)->delete()`): `automation_message_events` older than cutoff, `automation_message_logs` with `created_at < cutoff`, `automation_enrolment_events` < cutoff, and enrolments with status != active and `completed_at < cutoff`. Never touch step_stats or attributions.
-- [ ] T126 [US6] Run the US6 tests and fix until green: `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/Reporting`. Re-run the full MA suite: `php artisan test --compact --testsuite="MarketingAutomation Feature Test"`. Run pint.
+- [X] T125 [US6] Create `packages/Webkul/MarketingAutomation/src/Console/Commands/PurgeLogsCommand.php` (`automation:purge-logs`), scheduled `daily()`. Cutoff = now - `Settings::retentionMonths()`. Delete in batches of 1000 (loop `->limit(1000)->delete()`): `automation_message_events` older than cutoff, `automation_message_logs` with `created_at < cutoff`, `automation_enrolment_events` < cutoff, and enrolments with status != active and `completed_at < cutoff`. Never touch step_stats or attributions.
+- [X] T126 [US6] Run the US6 tests and fix until green: `php artisan test --compact packages/Webkul/MarketingAutomation/tests/Feature/Reporting`. Re-run the full MA suite: `php artisan test --compact --testsuite="MarketingAutomation Feature Test"`. Run pint.
 
 ---
 
@@ -779,7 +779,7 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Setup for US7
 
-- [ ] T127 [US7] Scaffold `packages/Webkul/Klaviyo` exactly like Phase 1 did for MA:
+- [X] T127 [US7] Scaffold `packages/Webkul/Klaviyo` exactly like Phase 1 did for MA:
   - dirs `src/{Config,Console/Commands,Contracts,Database/Migrations,Database/Factories,Http/Controllers/Admin,Http/Requests,Jobs,Listeners,Models,Providers,Repositories,Routes,Services,Resources/views/admin,Resources/lang/en,Resources/lang/ar}`, `tests/Feature`
   - PSR-4 entries `Webkul\\Klaviyo\\` and `Webkul\\Klaviyo\\Tests\\` in `/var/www/html/bagisto/composer.json`
   - `KlaviyoServiceProvider` (mergeConfig menu → `menu.admin` with entry key `marketing.automation.klaviyo` (it must equal the ACL key so Bagisto's menu filter shows it), route `admin.marketing.klaviyo.index`; acl entry `marketing.automation.klaviyo` is already defined in MA T031, so don't duplicate it; translations namespace `klaviyo`, views `klaviyo`, admin routes with the same middleware/prefix as MA, and shop routes `src/Routes/shop-routes.php` loaded with `Route::middleware(['web', 'shop'])` for the T135 beacon)
@@ -787,23 +787,23 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - registration in `bootstrap/providers.php` and `config/concord.php`
   - `KlaviyoTestCase` + `tests/Pest.php` `uses()` + phpunit testsuite `Klaviyo Feature Test`
   - `composer dump-autoload`
-- [ ] T128 [US7] Migrations `packages/Webkul/Klaviyo/src/Database/Migrations/2026_10_08_100001_create_klaviyo_tables.php` for klaviyo_connections, klaviyo_outbox and klaviyo_sync_jobs, exactly per data-model.md § Klaviyo module (enum-like columns as strings). Models + Contracts + Proxies + Repositories + Factories: `Connection` (`api_key` cast `encrypted`), `OutboxItem`, `SyncJob`. Register them in the Klaviyo ModuleServiceProvider.
+- [X] T128 [US7] Migrations `packages/Webkul/Klaviyo/src/Database/Migrations/2026_10_08_100001_create_klaviyo_tables.php` for klaviyo_connections, klaviyo_outbox and klaviyo_sync_jobs, exactly per data-model.md § Klaviyo module (enum-like columns as strings). Models + Contracts + Proxies + Repositories + Factories: `Connection` (`api_key` cast `encrypted`), `OutboxItem`, `SyncJob`. Register them in the Klaviyo ModuleServiceProvider.
 
 ### Tests for US7 (write first)
 
-- [ ] T129 [P] [US7] Create fixtures `packages/Webkul/Klaviyo/tests/Fixtures/` (`accounts_ok.json`, `accounts_401.json`, `events_202.json` (empty body, 202), `events_429.json`, `events_409_duplicate.json`, `unsubscribed_events_page.json` with 2 unsubscribe events containing profile emails, `metrics.json` listing an "Unsubscribed from Email Marketing" metric id) and Feature test `packages/Webkul/Klaviyo/tests/Feature/ConnectionTest.php`:
+- [X] T129 [P] [US7] Create fixtures `packages/Webkul/Klaviyo/tests/Fixtures/` (`accounts_ok.json`, `accounts_401.json`, `events_202.json` (empty body, 202), `events_429.json`, `events_409_duplicate.json`, `unsubscribed_events_page.json` with 2 unsubscribe events containing profile emails, `metrics.json` listing an "Unsubscribed from Email Marketing" metric id) and Feature test `packages/Webkul/Klaviyo/tests/Feature/ConnectionTest.php`:
   - connect with a valid key → `GET https://a.klaviyo.com/api/accounts` sent with headers `Authorization: Klaviyo-API-Key {key}` and `revision: 2024-10-15` → status connected
   - a 401 → 422 with message
   - the API key never appears in the GET index response
-- [ ] T130 [P] [US7] Feature test `packages/Webkul/Klaviyo/tests/Feature/OutboxTest.php`:
+- [X] T130 [P] [US7] Feature test `packages/Webkul/Klaviyo/tests/Feature/OutboxTest.php`:
   - placing an order creates outbox rows: 1 `Placed Order` + N `Ordered Product` (one per line item) + a profile upsert (US7-AS2)
   - `klaviyo:flush-outbox` posts each to `/api/events` with `unique_id` per the data-model pattern and marks it `sent`
   - a 429 → stays pending with `attempts+1` and `available_at` pushed back
   - a duplicate trigger of the same order event → no second outbox row (unique constraint)
   - Klaviyo down (ConnectionException) then up → delivered once (US7-AS3)
   - each mapped event in data-model.md § Event mapping creates the right `metric.name`
-- [ ] T131 [P] [US7] Feature test `packages/Webkul/Klaviyo/tests/Feature/HistoricalSyncTest.php`: with 3 customers, 2 orders within 12 months, 1 order 13 months old and 2 active products → POST sync → 3 SyncJob rows. Running the jobs → profiles 3, orders 2 (the old one excluded), catalog 2. `processed/total` are correct and the status endpoint reports them (US7-AS1).
-- [ ] T132 [P] [US7] Feature test `packages/Webkul/Klaviyo/tests/Feature/ConsentAndRoutingTest.php`:
+- [X] T131 [P] [US7] Feature test `packages/Webkul/Klaviyo/tests/Feature/HistoricalSyncTest.php`: with 3 customers, 2 orders within 12 months, 1 order 13 months old and 2 active products → POST sync → 3 SyncJob rows. Running the jobs → profiles 3, orders 2 (the old one excluded), catalog 2. `processed/total` are correct and the status endpoint reports them (US7-AS1).
+- [X] T132 [P] [US7] Feature test `packages/Webkul/Klaviyo/tests/Feature/ConsentAndRoutingTest.php`:
   - `klaviyo:pull-consent` with the unsubscribed fixture → those contacts' email consent revoked with source `klaviyo`, and the cursor advanced
   - a store consent change (`marketing_automation.consent.changed`) → a subscription outbox row
   - routing `abandoned_cart = klaviyo` → an abandoned cart detected → no native enrolment (US7-AS4)
@@ -811,12 +811,12 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
 
 ### Implementation for US7
 
-- [ ] T133 [US7] Create `packages/Webkul/Klaviyo/src/Services/KlaviyoClient.php` (bind, not singleton), constructed with a `Connection`.
+- [X] T133 [US7] Create `packages/Webkul/Klaviyo/src/Services/KlaviyoClient.php` (bind, not singleton), constructed with a `Connection`.
   - `request(string $method, string $path, array $json = []): Response` uses base `https://a.klaviyo.com`, headers `Authorization: Klaviyo-API-Key {key}`, `revision: 2024-10-15`, `accept: application/vnd.api+json`, `content-type: application/vnd.api+json`, timeout 15.
   - Helpers: `account()`, `createEvent(array $attributes)`, `importProfile(array $attributes)`, `subscribeProfiles(string $listId, array $profiles, string $channel)`, `unsubscribeProfiles(...)`, `upsertCatalogItem(array $item)`, `deleteCatalogItem(string $externalId)`, `metrics()`, `events(array $filter, ?string $pageCursor)`.
   - Map the response to retryable (429/5xx/connection) or permanent (other 4xx). A 409 duplicate counts as success.
-- [ ] T134 [US7] Create `packages/Webkul/Klaviyo/src/Services/PayloadMapper.php` with methods `profile(Customer|Contact): array` (email, phone_number E.164, first_name, last_name, `properties.locale`, external_id = `{channel_code}:customer:{id}`), `placedOrder(Order): array`, `orderedProduct(Order, OrderItem): array`, `fulfilledOrder`, `cancelledOrder`, `refundedOrder(Refund)`, `viewedProduct(Product, Contact)`, `addedToCart(CartItem, Contact)`, `startedCheckout(Cart, Contact)` and `catalogItem(Product, Channel): array`. Each event payload is a JSON:API `{data: {type: 'event', attributes: {metric: {data: {type: 'metric', attributes: {name}}}, profile: {data: {type: 'profile', attributes: {...}}}, properties: {...}, value: total, time: ISO8601, unique_id}}}`, with the unique_id pattern `{channel_code}:{metric_slug}:{entity_id}[:{line_id}]` (data-model.md). Order properties: OrderId (increment_id), Categories, ItemNames, Items[] (ProductID, SKU, ProductName, Quantity, ItemPrice, RowTotal, ProductURL, ImageURL), DiscountCode, DiscountValue.
-- [ ] T135 [US7] Create `packages/Webkul/Klaviyo/src/Services/OutboxWriter.php` with `write(Connection $c, string $kind, string $uniqueId, array $payload): void` using `insertOrIgnore` on the unique `(connection_id, kind, unique_id)`. Create `packages/Webkul/Klaviyo/src/Listeners/StoreEventsListener.php`, registered in `packages/Webkul/Klaviyo/src/Providers/EventServiceProvider.php`. It maps core events to outbox writes for every active Connection of the event's channel (data-model.md § Event mapping):
+- [X] T134 [US7] Create `packages/Webkul/Klaviyo/src/Services/PayloadMapper.php` with methods `profile(Customer|Contact): array` (email, phone_number E.164, first_name, last_name, `properties.locale`, external_id = `{channel_code}:customer:{id}`), `placedOrder(Order): array`, `orderedProduct(Order, OrderItem): array`, `fulfilledOrder`, `cancelledOrder`, `refundedOrder(Refund)`, `viewedProduct(Product, Contact)`, `addedToCart(CartItem, Contact)`, `startedCheckout(Cart, Contact)` and `catalogItem(Product, Channel): array`. Each event payload is a JSON:API `{data: {type: 'event', attributes: {metric: {data: {type: 'metric', attributes: {name}}}, profile: {data: {type: 'profile', attributes: {...}}}, properties: {...}, value: total, time: ISO8601, unique_id}}}`, with the unique_id pattern `{channel_code}:{metric_slug}:{entity_id}[:{line_id}]` (data-model.md). Order properties: OrderId (increment_id), Categories, ItemNames, Items[] (ProductID, SKU, ProductName, Quantity, ItemPrice, RowTotal, ProductURL, ImageURL), DiscountCode, DiscountValue.
+- [X] T135 [US7] Create `packages/Webkul/Klaviyo/src/Services/OutboxWriter.php` with `write(Connection $c, string $kind, string $uniqueId, array $payload): void` using `insertOrIgnore` on the unique `(connection_id, kind, unique_id)`. Create `packages/Webkul/Klaviyo/src/Listeners/StoreEventsListener.php`, registered in `packages/Webkul/Klaviyo/src/Providers/EventServiceProvider.php`. It maps core events to outbox writes for every active Connection of the event's channel (data-model.md § Event mapping):
   - `checkout.order.save.after` → profile + Placed Order + Ordered Product × items
   - `sales.order.update` status completed → Fulfilled Order
   - `sales.order.cancel.after` → Cancelled Order
@@ -832,40 +832,40 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
     - Add a test case to `packages/Webkul/Klaviyo/tests/Feature/OutboxTest.php` (T130): POST with a logged-in customer → 1 outbox row; a repeat within the same hour → still 1; an anonymous visitor → 0.
 
   After writing, dispatch `FlushOutboxBatch` with `->afterCommit()` on queue `klaviyo`.
-- [ ] T136 [US7] Create the job `packages/Webkul/Klaviyo/src/Jobs/FlushOutboxBatch.php` and command `packages/Webkul/Klaviyo/src/Console/Commands/FlushOutboxCommand.php` (`klaviyo:flush-outbox`, scheduled every minute, withoutOverlapping). Claim up to 200 `pending` rows with `available_at <= now()` (set `status=sending`). Send each through KlaviyoClient by kind:
+- [X] T136 [US7] Create the job `packages/Webkul/Klaviyo/src/Jobs/FlushOutboxBatch.php` and command `packages/Webkul/Klaviyo/src/Console/Commands/FlushOutboxCommand.php` (`klaviyo:flush-outbox`, scheduled every minute, withoutOverlapping). Claim up to 200 `pending` rows with `available_at <= now()` (set `status=sending`). Send each through KlaviyoClient by kind:
   - success → `sent`, `sent_at`
   - retryable → `pending`, `attempts+1`, `available_at = now() + min(2^attempts, 60) minutes`
   - permanent or attempts ≥ 10 → `failed` with `last_error`
 
   Rows stuck in `sending` for more than 10 minutes go back to `pending`. Purge `sent` rows older than 30 days in the same command.
-- [ ] T137 [US7] Create the job `packages/Webkul/Klaviyo/src/Jobs/HistoricalSync.php` `(int $syncJobId)`. By entity:
+- [X] T137 [US7] Create the job `packages/Webkul/Klaviyo/src/Jobs/HistoricalSync.php` `(int $syncJobId)`. By entity:
   - customers: the `customers` table, ordered by id > cursor_id, chunks of 100 → profile import + subscription state from MA consents
   - orders: `orders` with `created_at >= now()-12 months` → Placed Order + Ordered Product outbox rows (same unique ids as live, so there are no duplicates)
   - catalog: active products (`product_flat` with status=1 for the channel; check the table) → catalog items
 
   Update `cursor_id` and `processed` after each chunk, and re-dispatch itself until done (so a crash resumes from the cursor). `total` is computed at start. Status: running → completed or failed.
-- [ ] T138 [US7] Create `packages/Webkul/Klaviyo/src/Console/Commands/PullConsentCommand.php` (`klaviyo:pull-consent`, every 15 min). For each connected Connection: if `unsubscribed_metric_ids` is empty, fetch `metrics()` and store the ids whose name starts with "Unsubscribed". Fetch `events` with `filter=any(metric_id,[...]),greater-than(datetime,{consent_cursor})` following `links.next`. For each event's profile email/phone, revoke the matching MA contact consent (email metric → Email, SMS metric → Sms) via `ConsentService::revoke(..., ConsentSource::Klaviyo)`. Advance `consent_cursor` to the max event datetime.
-- [ ] T139 [US7] Create `packages/Webkul/Klaviyo/src/Http/Controllers/Admin/KlaviyoController.php` with `index`, `connect`, `disconnect`, `sync`, `syncStatus` and `retryFailed` per contracts/admin-http.md § Klaviyo. Permission `marketing.automation.klaviyo`. Add routes in `packages/Webkul/Klaviyo/src/Routes/admin-routes.php` named `admin.marketing.klaviyo.index|connect|disconnect|sync|sync_status|retry_failed`. Create the view `packages/Webkul/Klaviyo/src/Resources/views/admin/index.blade.php`:
+- [X] T138 [US7] Create `packages/Webkul/Klaviyo/src/Console/Commands/PullConsentCommand.php` (`klaviyo:pull-consent`, every 15 min). For each connected Connection: if `unsubscribed_metric_ids` is empty, fetch `metrics()` and store the ids whose name starts with "Unsubscribed". Fetch `events` with `filter=any(metric_id,[...]),greater-than(datetime,{consent_cursor})` following `links.next`. For each event's profile email/phone, revoke the matching MA contact consent (email metric → Email, SMS metric → Sms) via `ConsentService::revoke(..., ConsentSource::Klaviyo)`. Advance `consent_cursor` to the max event datetime.
+- [X] T139 [US7] Create `packages/Webkul/Klaviyo/src/Http/Controllers/Admin/KlaviyoController.php` with `index`, `connect`, `disconnect`, `sync`, `syncStatus` and `retryFailed` per contracts/admin-http.md § Klaviyo. Permission `marketing.automation.klaviyo`. Add routes in `packages/Webkul/Klaviyo/src/Routes/admin-routes.php` named `admin.marketing.klaviyo.index|connect|disconnect|sync|sync_status|retry_failed`. Create the view `packages/Webkul/Klaviyo/src/Resources/views/admin/index.blade.php`:
   - a per-channel connection card (API key password input, public key, connect/disconnect, status)
   - a historical sync card with 3 progress bars polling `sync_status` every 3 s while running
   - outbox stats and a "Retry failed" button
   - a link to MA routing settings
 
   The API key is never echoed back.
-- [ ] T140 [US7] Routing guard: in `packages/Webkul/MarketingAutomation/src/Services/Settings.php::routing()`, if the stored value is `klaviyo` but there's no active Klaviyo connection for the channel, return `Native` (check `class_exists(\Webkul\Klaviyo\Models\Connection::class)` and query it). This lets MA work without the Klaviyo module. When routing changes from native to klaviyo/disabled, cancel the active enrolments of flows with that template_key in that channel (`exit_reason=routing_disabled`): listen to `core.configuration.save.after` (check the exact event name with `grep -rn "configuration.save" packages/Webkul/Core packages/Webkul/Admin`).
-- [ ] T141 [US7] Run the US7 tests and fix until green: `php artisan test --compact --testsuite="Klaviyo Feature Test"`. Re-run `tests/Feature/Engine/EnrolmentTest.php` from MA. Run pint.
+- [X] T140 [US7] Routing guard: in `packages/Webkul/MarketingAutomation/src/Services/Settings.php::routing()`, if the stored value is `klaviyo` but there's no active Klaviyo connection for the channel, return `Native` (check `class_exists(\Webkul\Klaviyo\Models\Connection::class)` and query it). This lets MA work without the Klaviyo module. When routing changes from native to klaviyo/disabled, cancel the active enrolments of flows with that template_key in that channel (`exit_reason=routing_disabled`): listen to `core.configuration.save.after` (check the exact event name with `grep -rn "configuration.save" packages/Webkul/Core packages/Webkul/Admin`).
+- [X] T141 [US7] Run the US7 tests and fix until green: `php artisan test --compact --testsuite="Klaviyo Feature Test"`. Re-run `tests/Feature/Engine/EnrolmentTest.php` from MA. Run pint.
 
 ---
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [ ] T142 [P] Playwright smoke test `tests/e2e-pw/marketing-automation/abandoned-cart.spec.ts`, following the existing specs in `tests/e2e-pw` for login helpers and config:
+- [X] T142 [P] Playwright smoke test `tests/e2e-pw/marketing-automation/abandoned-cart.spec.ts`, following the existing specs in `tests/e2e-pw` for login helpers and config:
   - admin creates the Abandoned Cart flow from the template with a 1-minute delay and a whatsapp step replaced by email, then activates it
   - a guest adds a product, enters an email at checkout and leaves
   - run `php artisan automation:detect-abandoned-carts && php artisan automation:dispatch-due` via the test's setup hook, or document it as a manual step if the suite can't run artisan
   - with `MAIL_MAILER=log`, assert the log contains the restore URL, then visit it and assert the cart shows the product
-- [ ] T143 [P] Performance check for SC-006, `packages/Webkul/MarketingAutomation/tests/Feature/PerformanceTest.php`: with `DB::enableQueryLog()`, firing `checkout.cart.add.after` and `checkout.order.save.after` listeners in a request context runs ≤ 3 MA queries synchronously (everything else is queued). Seed **10,000** due enrolments (bulk `DB::table()->insert` in chunks of 1000, not factories one by one); one `automation:dispatch-due` run claims all of them within its 20 × 500 loop budget, `Queue::assertPushed(ProcessEnrolmentStep::class, 10000)`, and the run takes < 15 s with `Queue::fake()` (SC-003, SC-006). Also assert that `HealthCheck::report()['lag_over_5m_ratio']` is 0 after jobs run on time and > 0 after a 10-minute-late run.
-- [ ] T144 [P] Security review pass, recording fixes in code (no docs):
+- [X] T143 [P] Performance check for SC-006, `packages/Webkul/MarketingAutomation/tests/Feature/PerformanceTest.php`: with `DB::enableQueryLog()`, firing `checkout.cart.add.after` and `checkout.order.save.after` listeners in a request context runs ≤ 3 MA queries synchronously (everything else is queued). Seed **10,000** due enrolments (bulk `DB::table()->insert` in chunks of 1000, not factories one by one); one `automation:dispatch-due` run claims all of them within its 20 × 500 loop budget, `Queue::assertPushed(ProcessEnrolmentStep::class, 10000)`, and the run takes < 15 s with `Queue::fake()` (SC-003, SC-006). Also assert that `HealthCheck::report()['lag_over_5m_ratio']` is 0 after jobs run on time and > 0 after a 10-minute-late run.
+- [X] T144 [P] Security review pass, recording fixes in code (no docs):
   - every admin controller action checks a permission
   - no `{!! !!}` on merchant data except the escaped block HTML from EmailBlockRenderer
   - tracking click only redirects to stored links
@@ -874,10 +874,10 @@ Contact, Consent, ConsentEvent, Flow, FlowVersion, Enrolment, EnrolmentEvent, Me
   - throttles on the public shop POST routes
 
   Add a test `packages/Webkul/MarketingAutomation/tests/Feature/SecurityTest.php` asserting (a) an admin whose role has only `marketing.automation.flows` sees the Flows menu item and not Providers (render `admin.marketing.automation.flows.index` and check the sidebar HTML), and (b) each admin route returns 401 for a logged-in admin with no permissions (iterate `Route::getRoutes()` filtered by name prefix `admin.marketing.automation.`).
-- [ ] T145 [P] Complete the Arabic translations in `packages/Webkul/MarketingAutomation/src/Resources/lang/ar/app.php` and `packages/Webkul/Klaviyo/src/Resources/lang/ar/app.php`. Add a test `packages/Webkul/MarketingAutomation/tests/Feature/TranslationsTest.php` asserting that the en and ar key sets are identical (flatten with `Arr::dot`).
-- [ ] T146 Check that the Amacommerce theme renders every injected storefront piece (signup consent checkboxes, checkout contact capture, back-in-stock form, account preferences link). Add a feature test `packages/Webkul/MarketingAutomation/tests/Feature/ThemeHooksTest.php` that sets the channel theme to `amacommerce` (check the theme code in `config/themes.php`) and asserts each page's HTML contains the injected element ids (`ma-consent-checkboxes`, `ma-contact-capture`, `ma-back-in-stock`, `ma-preferences-link`; add those ids in the views).
-- [ ] T147 [P] Consent audit for SC-004: create `packages/Webkul/MarketingAutomation/src/Console/Commands/AuditConsentCommand.php` (`automation:audit-consent {--days=30}`) and register it in the service provider. It finds marketing, non-test `automation_message_logs` created within `--days` where either no `automation_consent_events` row with `status=granted` exists for that contact and `message_channel` with `created_at <= log.created_at`, or the latest consent event before `log.created_at` is `revoked`. Fallback sends count against the fallback channel. Print a table (log id, contact id, channel, sent at, reason) and exit with code 1 if any rows are found, else 0 with "No violations". Feature test `packages/Webkul/MarketingAutomation/tests/Feature/AuditConsentTest.php`: 1 compliant log + 1 violating log (sent after a revoke) → exit code 1 and only the violating id is listed; only compliant logs → exit 0.
-- [ ] T148 Final: run `vendor/bin/pint --dirty --format agent`, `php artisan test --compact --testsuite="MarketingAutomation Feature Test"`, `--testsuite="MarketingAutomation Unit Test"` and `--testsuite="Klaviyo Feature Test"`. Walk through `specs/002-marketing-automation/quickstart.md` steps 1–6 against a local install with sandbox credentials, or note which steps could not be run and why.
+- [X] T145 [P] Complete the Arabic translations in `packages/Webkul/MarketingAutomation/src/Resources/lang/ar/app.php` and `packages/Webkul/Klaviyo/src/Resources/lang/ar/app.php`. Add a test `packages/Webkul/MarketingAutomation/tests/Feature/TranslationsTest.php` asserting that the en and ar key sets are identical (flatten with `Arr::dot`).
+- [X] T146 Check that the Amacommerce theme renders every injected storefront piece (signup consent checkboxes, checkout contact capture, back-in-stock form, account preferences link). Add a feature test `packages/Webkul/MarketingAutomation/tests/Feature/ThemeHooksTest.php` that sets the channel theme to `amacommerce` (check the theme code in `config/themes.php`) and asserts each page's HTML contains the injected element ids (`ma-consent-checkboxes`, `ma-contact-capture`, `ma-back-in-stock`, `ma-preferences-link`; add those ids in the views).
+- [X] T147 [P] Consent audit for SC-004: create `packages/Webkul/MarketingAutomation/src/Console/Commands/AuditConsentCommand.php` (`automation:audit-consent {--days=30}`) and register it in the service provider. It finds marketing, non-test `automation_message_logs` created within `--days` where either no `automation_consent_events` row with `status=granted` exists for that contact and `message_channel` with `created_at <= log.created_at`, or the latest consent event before `log.created_at` is `revoked`. Fallback sends count against the fallback channel. Print a table (log id, contact id, channel, sent at, reason) and exit with code 1 if any rows are found, else 0 with "No violations". Feature test `packages/Webkul/MarketingAutomation/tests/Feature/AuditConsentTest.php`: 1 compliant log + 1 violating log (sent after a revoke) → exit code 1 and only the violating id is listed; only compliant logs → exit 0.
+- [X] T148 Final: run `vendor/bin/pint --dirty --format agent`, `php artisan test --compact --testsuite="MarketingAutomation Feature Test"`, `--testsuite="MarketingAutomation Unit Test"` and `--testsuite="Klaviyo Feature Test"`. Walk through `specs/002-marketing-automation/quickstart.md` steps 1–6 against a local install with sandbox credentials, or note which steps could not be run and why.
 
 ---
 

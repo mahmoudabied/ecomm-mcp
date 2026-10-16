@@ -2,6 +2,7 @@
 
 namespace Webkul\MarketingAutomation\Engine;
 
+use Webkul\CartRule\Models\CartRule;
 use Webkul\MarketingAutomation\Enums\FlowType;
 use Webkul\MarketingAutomation\Enums\MessageChannel;
 use Webkul\MarketingAutomation\Enums\StepType;
@@ -24,6 +25,16 @@ class FlowValidator
      * How deep condition groups may nest.
      */
     protected const MAX_RULE_DEPTH = 5;
+
+    /**
+     * The block types the email renderer has a Blade view for; anything else
+     * would be silently dropped at send time.
+     *
+     * @var array<int, string>
+     */
+    protected const EMAIL_BLOCK_TYPES = [
+        'header', 'text', 'image', 'button', 'product_grid', 'cart_items', 'order_summary', 'coupon', 'footer',
+    ];
 
     /**
      * Create a new validator instance.
@@ -375,7 +386,8 @@ class FlowValidator
     }
 
     /**
-     * Email steps have no provider requirements yet.
+     * Email steps need known block types, valid coupon rules and, when
+     * transactional, no rich blocks.
      *
      * @param  array<string, mixed>  $step
      * @return array<int, string>
@@ -384,17 +396,67 @@ class FlowValidator
     {
         $errors = [];
 
-        if ($flow->type === FlowType::Transactional) {
-            foreach ($step['blocks'] ?? [] as $localeBlocks) {
-                foreach ((array) $localeBlocks as $block) {
-                    if (in_array($block['type'] ?? '', ['coupon', 'product_grid'], true)) {
-                        $errors[] = trans('marketing_automation::app.flows.validation.transactional-block', ['block' => $block['type']]);
+        foreach ($step['blocks'] ?? [] as $localeBlocks) {
+            foreach ((array) $localeBlocks as $block) {
+                if (! is_array($block)) {
+                    continue;
+                }
+
+                if ($error = $this->unknownBlockError($block)) {
+                    $errors[] = $error;
+                }
+
+                if (
+                    $flow->type === FlowType::Transactional
+                    && in_array($block['type'] ?? '', ['coupon', 'product_grid'], true)
+                ) {
+                    $errors[] = trans('marketing_automation::app.flows.validation.transactional-block', ['block' => $block['type']]);
+                }
+
+                if (($block['type'] ?? '') === 'coupon') {
+                    if ($message = $this->couponRuleError((int) ($block['cart_rule_id'] ?? 0))) {
+                        $errors[] = $message;
                     }
                 }
             }
         }
 
         return $errors;
+    }
+
+    /**
+     * The error for a coupon block pointing at a missing or non-generating rule.
+     */
+    protected function couponRuleError(int $cartRuleId): string
+    {
+        $rule = CartRule::query()->find($cartRuleId);
+
+        if (
+            $rule === null
+            || ! $rule->coupon_type
+            || ! $rule->use_auto_generation
+        ) {
+            return trans('marketing_automation::app.flows.validation.coupon-rule');
+        }
+
+        return '';
+    }
+
+    /**
+     * The error for a block the renderer has no view for; it would be
+     * silently dropped at send time, so activation refuses it instead.
+     *
+     * @param  array<string, mixed>  $block
+     */
+    protected function unknownBlockError(array $block): ?string
+    {
+        $type = (string) ($block['type'] ?? '');
+
+        if (in_array($type, self::EMAIL_BLOCK_TYPES, true)) {
+            return null;
+        }
+
+        return trans('marketing_automation::app.flows.validation.unknown-block', ['block' => $type !== '' ? $type : '?']);
     }
 
     /**

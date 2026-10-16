@@ -3,6 +3,7 @@
 use Webkul\Admin\Tests\AdminTestCase;
 use Webkul\Core\Tests\CoreTestCase;
 use Webkul\DataGrid\Tests\DataGridTestCase;
+use Webkul\Klaviyo\Tests\KlaviyoTestCase;
 use Webkul\MarketingAutomation\Tests\MarketingAutomationTestCase;
 use Webkul\McpServer\Tests\McpTestCase;
 use Webkul\Shop\Tests\ShopTestCase;
@@ -26,6 +27,7 @@ uses(DataGridTestCase::class)->in('../packages/Webkul/DataGrid/tests');
 uses(ShopTestCase::class)->in('../packages/Webkul/Shop/tests');
 uses(McpTestCase::class)->in('../packages/Webkul/McpServer/tests');
 uses(MarketingAutomationTestCase::class)->in('../packages/Webkul/MarketingAutomation/tests');
+uses(KlaviyoTestCase::class)->in('../packages/Webkul/Klaviyo/tests');
 
 /*
 |--------------------------------------------------------------------------
