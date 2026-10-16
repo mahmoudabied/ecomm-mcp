@@ -21,6 +21,8 @@ use Webkul\Core\Jobs\UpdateCreateVisitIndex;
 use Webkul\Marketing\Jobs\UpdateCreateSearchTerm;
 use Webkul\Notification\Events\CreateOrderNotification;
 use Webkul\Notification\Events\UpdateOrderNotification;
+use Webkul\Product\Jobs\ElasticSearch\DeleteIndex as DeleteElasticSearchIndex;
+use Webkul\Product\Jobs\ElasticSearch\UpdateCreateIndex as UpdateCreateElasticSearchIndex;
 use Webkul\Product\Jobs\UpdateCreateInventoryIndex;
 use Webkul\Product\Jobs\UpdateCreatePriceIndex;
 use Webkul\Sitemap\Jobs\ProcessSitemap;
@@ -159,6 +161,8 @@ return [
         UpdateCreateSearchTerm::class,
         UpdateCreateInventoryIndex::class,
         UpdateCreatePriceIndex::class,
+        UpdateCreateElasticSearchIndex::class,
+        DeleteElasticSearchIndex::class,
         ProcessSitemap::class,
     ],
 ];

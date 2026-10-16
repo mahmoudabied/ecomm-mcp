@@ -59,15 +59,79 @@ class Product extends Model implements ProductContract
      */
     public function product_flats(): HasMany
     {
-        return $this->hasMany(ProductFlatProxy::modelClass());
+        return $this->hasMany(ProductFlatProxy::modelClass(), 'product_id');
     }
 
     /**
-     * Get the categories that belong to the product.
+     * Get the product that owns the product.
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(static::class, 'parent_id');
+    }
+
+    /**
+     * Get the product attribute family that owns the product.
+     */
+    public function attribute_family(): BelongsTo
+    {
+        return $this->belongsTo(AttributeFamilyProxy::modelClass());
+    }
+
+    /**
+     * The super attributes that belong to the product.
+     */
+    public function super_attributes(): BelongsToMany
+    {
+        return $this->belongsToMany(AttributeProxy::modelClass(), 'product_super_attributes');
+    }
+
+    /**
+     * Get the product attribute values that owns the product.
+     */
+    public function attribute_values(): HasMany
+    {
+        return $this->hasMany(ProductAttributeValueProxy::modelClass());
+    }
+
+    /**
+     * Get the product customer group prices that owns the product.
+     */
+    public function customer_group_prices(): HasMany
+    {
+        return $this->hasMany(ProductCustomerGroupPriceProxy::modelClass());
+    }
+
+    /**
+     * Get the product customer group prices that owns the product.
+     */
+    public function catalog_rule_prices(): HasMany
+    {
+        return $this->hasMany(CatalogRuleProductPriceProxy::modelClass());
+    }
+
+    /**
+     * Get the price indices that owns the product.
+     */
+    public function price_indices(): HasMany
+    {
+        return $this->hasMany(ProductPriceIndexProxy::modelClass());
+    }
+
+    /**
+     * Get the inventory indices that owns the product.
+     */
+    public function inventory_indices(): HasMany
+    {
+        return $this->hasMany(ProductInventoryIndexProxy::modelClass());
+    }
+
+    /**
+     * The categories that belong to the product.
      */
     public function categories(): BelongsToMany
     {
-        return $this->belongsToMany(CategoryProxy::modelClass(), "product_categories");
+        return $this->belongsToMany(CategoryProxy::modelClass(), 'product_categories');
     }
 
     /**
@@ -75,7 +139,8 @@ class Product extends Model implements ProductContract
      */
     public function images(): HasMany
     {
-        return $this->hasMany(ProductImageProxy::modelClass(), "product_id")->orderBy("position");
+        return $this->hasMany(ProductImageProxy::modelClass(), 'product_id')
+            ->orderBy('position');
     }
 
     /**
@@ -83,7 +148,110 @@ class Product extends Model implements ProductContract
      */
     public function videos(): HasMany
     {
-        return $this->hasMany(ProductVideoProxy::modelClass());
+        return $this->hasMany(ProductVideoProxy::modelClass(), 'product_id')
+            ->orderBy('position');
+    }
+
+    /**
+     * Get the product reviews that owns the product.
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReviewProxy::modelClass());
+    }
+
+    /**
+     * Get the approved product reviews.
+     */
+    public function approvedReviews(): HasMany
+    {
+        return $this->reviews()->where('status', 'approved');
+    }
+
+    /**
+     * The inventory sources that belong to the product.
+     */
+    public function inventory_sources(): BelongsToMany
+    {
+        return $this->belongsToMany(InventorySourceProxy::modelClass(), 'product_inventories')
+            ->withPivot('id', 'qty');
+    }
+
+    /**
+     * Get inventory source quantity.
+     *
+     * @return bool
+     */
+    public function inventory_source_qty($inventorySourceId)
+    {
+        return $this->inventories()
+            ->where('inventory_source_id', $inventorySourceId)
+            ->sum('qty');
+    }
+
+    /**
+     * The inventories that belong to the product.
+     */
+    public function inventories(): HasMany
+    {
+        return $this->hasMany(ProductInventoryProxy::modelClass(), 'product_id');
+    }
+
+    /**
+     * The ordered inventories that belong to the product.
+     */
+    public function ordered_inventories(): HasMany
+    {
+        return $this->hasMany(ProductOrderedInventoryProxy::modelClass(), 'product_id');
+    }
+
+    /**
+     * Get the customizable options.
+     */
+    public function customizable_options(): HasMany
+    {
+        return $this->hasMany(ProductCustomizableOptionProxy::modelClass())
+            ->orderBy('sort_order');
+    }
+
+    /**
+     * Get the product variants that owns the product.
+     */
+    public function variants(): HasMany
+    {
+        return $this->hasMany(static::class, 'parent_id');
+    }
+
+    /**
+     * Get the grouped products that owns the product.
+     */
+    public function grouped_products(): HasMany
+    {
+        return $this->hasMany(ProductGroupedProductProxy::modelClass());
+    }
+
+    /**
+     * Get the grouped products that owns the product.
+     */
+    public function booking_products(): HasMany
+    {
+        return $this->hasMany(BookingProductProxy::modelClass());
+    }
+
+    /**
+     * The images that belong to the product.
+     */
+    public function downloadable_samples(): HasMany
+    {
+        return $this->hasMany(ProductDownloadableSampleProxy::modelClass());
+    }
+
+    /**
+     * The images that belong to the product.
+     */
+    public function downloadable_links(): HasMany
+    {
+        return $this->hasMany(ProductDownloadableLinkProxy::modelClass());
     }
 
     /**
@@ -99,7 +267,7 @@ class Product extends Model implements ProductContract
      */
     public function related_products(): BelongsToMany
     {
-        return $this->belongsToMany(static::class, "product_relations", "parent_id", "child_id");
+        return $this->belongsToMany(static::class, 'product_relations', 'parent_id', 'child_id');
     }
 
     /**
@@ -107,7 +275,7 @@ class Product extends Model implements ProductContract
      */
     public function up_sells(): BelongsToMany
     {
-        return $this->belongsToMany(static::class, "product_up_sells", "parent_id", "child_id");
+        return $this->belongsToMany(static::class, 'product_up_sells', 'parent_id', 'child_id');
     }
 
     /**
@@ -115,16 +283,161 @@ class Product extends Model implements ProductContract
      */
     public function cross_sells(): BelongsToMany
     {
-        return $this->belongsToMany(static::class, "product_cross_sells", "parent_id", "child_id");
+        return $this->belongsToMany(static::class, 'product_cross_sells', 'parent_id', 'child_id');
     }
 
     /**
-     * Get custom attribute value for an attribute instance.
+     * The cross sells that belong to the product.
+     */
+    public function channels(): BelongsToMany
+    {
+        return $this->belongsToMany(ChannelProxy::modelClass(), 'product_channels', 'product_id', 'channel_id');
+    }
+
+    /**
+     * Is saleable.
+     *
+     * @param  string  $key
+     *
+     * @throws \Exception
+     */
+    public function isSaleable(): bool
+    {
+        return $this->getTypeInstance()
+            ->isSaleable();
+    }
+
+    /**
+     * Is stockable.
+     *
+     *
+     * @throws \Exception
+     */
+    public function isStockable(): bool
+    {
+        return $this->getTypeInstance()
+            ->isStockable();
+    }
+
+    /**
+     * Total quantity.
+     *
+     *
+     * @throws \Exception
+     */
+    public function totalQuantity(): int
+    {
+        return $this->getTypeInstance()
+            ->totalQuantity();
+    }
+
+    /**
+     * Have sufficient quantity.
+     *
+     *
+     * @throws \Exception
+     */
+    public function haveSufficientQuantity(int $qty): bool
+    {
+        return $this->getTypeInstance()
+            ->haveSufficientQuantity($qty);
+    }
+
+    /**
+     * Get type instance.
+     *
+     *
+     * @throws \Exception
+     */
+    public function getTypeInstance(): AbstractType
+    {
+        if ($this->typeInstance) {
+            return $this->typeInstance;
+        }
+
+        $this->typeInstance = app(config('product_types.'.$this->type.'.class'));
+
+        if (! $this->typeInstance instanceof AbstractType) {
+            throw new Exception("Please ensure the product type '{$this->type}' is configured in your application.");
+        }
+
+        $this->typeInstance->setProduct($this);
+
+        return $this->typeInstance;
+    }
+
+    /**
+     * The images that belong to the product.
+     *
+     * @return string
+     */
+    public function getBaseImageUrlAttribute()
+    {
+        $image = $this->images->first();
+
+        return $image->url ?? null;
+    }
+
+    /**
+     * Get an attribute from the model.
+     *
+     * @param  string  $key
+     * @return mixed
+     */
+    public function getAttribute($key)
+    {
+        if (! method_exists(static::class, $key)
+            && ! in_array($key, [
+                'pivot',
+                'parent_id',
+                'attribute_family_id',
+            ])
+            && ! isset($this->attributes[$key])
+        ) {
+            if (isset($this->id)) {
+                $attribute = $this->checkInLoadedFamilyAttributes()->where('code', $key)->first();
+
+                $this->attributes[$key] = $this->getCustomAttributeValue($attribute);
+
+                return $this->getAttributeValue($key);
+            }
+        }
+
+        return parent::getAttribute($key);
+    }
+
+    /**
+     * Retrieve product attributes.
+     *
+     * @param  Group  $group
+     * @param  bool  $skipSuperAttribute
+     *
+     * @throws \Exception
+     */
+    public function getEditableAttributes($group = null, $skipSuperAttribute = true): Collection
+    {
+        return $this->getTypeInstance()
+            ->getEditableAttributes($group, $skipSuperAttribute);
+    }
+
+    /**
+     * Get an product attribute value.
+     *
+     * @return mixed
      */
     public function getCustomAttributeValue($attribute)
     {
-        $locale = core()->getRequestedLocaleCode();
+        if (! $attribute) {
+            return;
+        }
+
+        $locale = core()->getRequestedLocaleCodeInRequestedChannel();
+
         $channel = core()->getRequestedChannelCode();
+
+        if (empty($this->attribute_values->count())) {
+            $this->load('attribute_values');
+        }
 
         if ($attribute->value_per_channel) {
             if ($attribute->value_per_locale) {
@@ -211,4 +524,3 @@ class Product extends Model implements ProductContract
         return ProductFactory::new();
     }
 }
-
