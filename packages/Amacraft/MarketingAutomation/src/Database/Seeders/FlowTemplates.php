@@ -180,7 +180,7 @@ class FlowTemplates
                 'description'          => 'marketing_automation::app.flows.templates.back_in_stock.description',
                 'trigger_type'         => 'back_in_stock',
                 'trigger_config'       => [],
-                'type'                 => 'marketing',
+                'type'                 => 'transactional',
                 'reentry_window_hours' => 720,
                 'exit_goals'           => [],
                 'draft_definition'     => [

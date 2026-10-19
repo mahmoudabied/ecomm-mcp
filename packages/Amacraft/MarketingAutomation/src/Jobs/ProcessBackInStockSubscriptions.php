@@ -69,7 +69,7 @@ class ProcessBackInStockSubscriptions implements ShouldQueue
             customerId: $contact->customer_id,
             email: $contact->email,
             phone: $contact->phone_e164,
-            triggerKey: "bis:{$subscription->id}",
+            triggerKey: $subscription->trigger_key ?? "bis:{$subscription->id}",
             payload: ['product_id' => $subscription->product_id],
             locale: $contact->locale,
         ));
