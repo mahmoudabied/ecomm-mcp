@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Http;
-use Webkul\Customer\Models\Customer;
 use Amacraft\Klaviyo\Jobs\HistoricalSync;
 use Amacraft\Klaviyo\Models\Connection;
 use Amacraft\Klaviyo\Models\OutboxItem;
@@ -10,6 +8,9 @@ use Amacraft\MarketingAutomation\Enums\ConsentSource;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\ContactResolver;
+use Illuminate\Support\Facades\Http;
+use Webkul\Core\Models\Channel;
+use Webkul\Customer\Models\Customer;
 use Webkul\Product\Models\Product;
 use Webkul\Product\Models\ProductFlat;
 use Webkul\Sales\Models\Order;
@@ -131,4 +132,35 @@ it('creates one sync job per entity and processes the expected volumes', functio
     $this->getJson(route('admin.marketing.klaviyo.sync_status'))
         ->assertOk()
         ->assertJsonStructure(['data' => [['entity', 'status', 'processed', 'total']]]);
+});
+
+it('only syncs the customers of the connection channel', function () {
+    $channel = core()->getAllChannels()->first();
+
+    $otherChannel = Channel::factory()->create();
+
+    $connection = Connection::factory()->create(['channel_id' => $channel->id]);
+
+    $before = Customer::query()->where('channel_id', $channel->id)->count();
+
+    $inChannel = Customer::factory()->count(2)->create(['channel_id' => $channel->id]);
+
+    $excluded = Customer::factory()->create(['channel_id' => $otherChannel->id]);
+
+    $this->postJson(route('admin.marketing.klaviyo.sync'), [
+        'channel_id' => $connection->channel_id,
+        'entities'   => ['customers'],
+    ])->assertOk();
+
+    $job = SyncJob::query()->where('entity', 'customers')->first();
+
+    expect($job->total)->toBe($before + 2);
+
+    HistoricalSync::dispatchSync($job->id);
+
+    $uniqueIds = OutboxItem::query()->where('kind', 'profile')->pluck('unique_id');
+
+    expect($uniqueIds)->toHaveCount($before + 2)
+        ->and($uniqueIds->filter(fn ($id) => str_contains((string) $id, ":customer:{$excluded->id}")))->toBeEmpty()
+        ->and($job->refresh()->status)->toBe('completed');
 });

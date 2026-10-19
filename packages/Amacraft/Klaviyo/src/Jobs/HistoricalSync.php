@@ -93,6 +93,7 @@ class HistoricalSync implements ShouldQueue
     protected function syncCustomers(SyncJob $job, PayloadMapper $mapper, ContactResolver $contactResolver, OutboxItemRepository $outboxItems): bool
     {
         $rows = Customer::query()
+            ->where('channel_id', $job->connection->channel_id)
             ->where('id', '>', $job->cursor_id)
             ->orderBy('id')
             ->limit(self::CHUNK)

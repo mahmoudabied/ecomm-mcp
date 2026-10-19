@@ -260,7 +260,9 @@ class KlaviyoController extends Controller
     protected function countEntity(Connection $connection, string $entity): int
     {
         return match ($entity) {
-            'customers' => Customer::query()->count(),
+            'customers' => Customer::query()
+                ->where('channel_id', $connection->channel_id)
+                ->count(),
             'orders'    => Order::query()
                 ->where('channel_id', $connection->channel_id)
                 ->where('created_at', '>=', now()->subMonths(12))
