@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Event;
-use Webkul\Core\Models\CoreConfig;
-use Webkul\Customer\Models\Customer;
 use Amacraft\MarketingAutomation\DTOs\TriggerEvent;
 use Amacraft\MarketingAutomation\Engine\EnrolmentService;
 use Amacraft\MarketingAutomation\Enums\EnrolmentStatus;
@@ -11,6 +8,9 @@ use Amacraft\MarketingAutomation\Enums\TriggerType;
 use Amacraft\MarketingAutomation\Models\Enrolment;
 use Amacraft\MarketingAutomation\Models\Flow;
 use Amacraft\MarketingAutomation\Repositories\FlowRepository;
+use Illuminate\Support\Facades\Event;
+use Webkul\Core\Models\CoreConfig;
+use Webkul\Customer\Models\Customer;
 
 function definitionWithSingleEmail(): array
 {
@@ -141,11 +141,10 @@ it('does not enrol when routing is disabled or delegated for the template', func
 
     $channel = core()->getAllChannels()->first();
 
-    CoreConfig::query()->create([
-        'code'         => 'marketing_automation.routing.settings.welcome',
-        'value'        => 'disabled',
-        'channel_code' => $channel->code,
-    ]);
+    CoreConfig::query()->updateOrCreate(
+        ['code' => 'marketing_automation.routing.settings.welcome'],
+        ['value' => 'disabled', 'channel_code' => $channel->code],
+    );
 
     $flow = makeActiveFlowForTrigger(TriggerType::CustomerRegistered, ['template_key' => 'welcome']);
 
@@ -153,7 +152,10 @@ it('does not enrol when routing is disabled or delegated for the template', func
 
     expect(app(EnrolmentService::class)->enrol(customerTriggerEvent($customer->id, $customer->email)))->toHaveCount(0);
 
-    CoreConfig::query()->where('code', 'marketing_automation.routing.settings.welcome')->update(['value' => 'klaviyo']);
+    CoreConfig::query()->updateOrCreate(
+        ['code' => 'marketing_automation.routing.settings.welcome'],
+        ['value' => 'klaviyo', 'channel_code' => $channel->code],
+    );
 
     expect(app(EnrolmentService::class)->enrol(customerTriggerEvent($customer->id, $customer->email)))->toHaveCount(0);
 });

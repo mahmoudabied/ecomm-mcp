@@ -122,11 +122,10 @@ it('does not enrol abandoned carts natively when routing sends them to Klaviyo',
 
     Connection::factory()->create(['channel_id' => $channel->id]);
 
-    CoreConfig::query()->create([
-        'code'         => 'marketing_automation.routing.settings.abandoned_cart',
-        'value'        => 'klaviyo',
-        'channel_code' => $channel->code,
-    ]);
+    CoreConfig::query()->updateOrCreate(
+        ['code' => 'marketing_automation.routing.settings.abandoned_cart'],
+        ['value' => 'klaviyo', 'channel_code' => $channel->code],
+    );
 
     consentFlow();
 
@@ -164,11 +163,10 @@ it('does not enrol abandoned carts natively when routing sends them to Klaviyo',
 it('falls back to native routing when a Klaviyo option is stored without an active connection', function () {
     $channel = core()->getAllChannels()->first();
 
-    CoreConfig::query()->create([
-        'code'         => 'marketing_automation.routing.settings.abandoned_cart',
-        'value'        => 'klaviyo',
-        'channel_code' => $channel->code,
-    ]);
+    CoreConfig::query()->updateOrCreate(
+        ['code' => 'marketing_automation.routing.settings.abandoned_cart'],
+        ['value' => 'klaviyo', 'channel_code' => $channel->code],
+    );
 
     expect(app(Settings::class)->routing($channel->code, 'abandoned_cart'))->toBe(RoutingTarget::Native);
 });
