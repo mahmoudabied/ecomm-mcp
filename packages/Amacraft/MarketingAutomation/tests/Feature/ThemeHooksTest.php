@@ -3,14 +3,11 @@
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Webkul\AmacommerceTheme\Providers\AmacommerceThemeServiceProvider;
-use Webkul\Attribute\Models\Attribute;
 use Webkul\Checkout\Models\Cart;
 use Webkul\Checkout\Models\CartItem;
 use Webkul\Core\Repositories\CoreConfigRepository;
 use Webkul\Customer\Models\Customer;
 use Webkul\Product\Models\Product;
-use Webkul\Product\Models\ProductAttributeValue;
-use Webkul\Product\Models\ProductFlat;
 use Webkul\Product\Models\ProductInventory;
 
 /**
@@ -93,29 +90,9 @@ it('injects the contact capture into the :theme checkout page', function (string
 it('injects the back-in-stock form into the :theme product page', function (string $theme) {
     useTheme($theme);
 
-    $channelCode = core()->getCurrentChannel()->code;
+    $product = $this->createStorefrontProduct(qty: 0);
 
-    $product = Product::factory()->create(['type' => 'simple']);
-
-    ProductFlat::query()->create([
-        'product_id' => $product->id,
-        'sku'        => $product->sku,
-        'type'       => 'simple',
-        'name'       => $product->name,
-        'url_key'    => $product->sku,
-        'status'     => 1,
-        'channel'    => $channelCode,
-        'locale'     => 'en',
-    ]);
-
-    ProductAttributeValue::query()->create([
-        'product_id'   => $product->id,
-        'attribute_id' => Attribute::query()->where('code', 'url_key')->value('id'),
-        'text_value'   => $product->sku,
-        'locale'       => 'en',
-    ]);
-
-    $this->get(route('shop.product_or_category.index', $product->sku))
+    $this->get(route('shop.product_or_category.index', $product->url_key))
         ->assertOk()
         ->assertSee('id="ma-back-in-stock"', escape: false);
 })->with(installedShopThemes());

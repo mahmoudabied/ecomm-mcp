@@ -1,11 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Queue;
-use Webkul\Core\Models\SubscribersList;
-use Webkul\Customer\Models\Customer;
-use Webkul\Inventory\Models\InventorySource;
 use Amacraft\MarketingAutomation\Enums\FlowStatus;
 use Amacraft\MarketingAutomation\Listeners\ProductListener;
 use Amacraft\MarketingAutomation\Models\BackInStockSubscription;
@@ -13,6 +7,12 @@ use Amacraft\MarketingAutomation\Models\Contact;
 use Amacraft\MarketingAutomation\Models\Enrolment;
 use Amacraft\MarketingAutomation\Models\Flow;
 use Amacraft\MarketingAutomation\Repositories\FlowRepository;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
+use Webkul\Core\Models\SubscribersList;
+use Webkul\Customer\Models\Customer;
+use Webkul\Inventory\Models\InventorySource;
 use Webkul\Notification\Events\CreateOrderNotification;
 use Webkul\Product\Models\Product;
 use Webkul\Product\Models\ProductInventory;
@@ -87,8 +87,9 @@ it('enrols on order placement', function () {
     $order = Order::factory()
         ->has(OrderPayment::factory()->state(['method' => 'cashondelivery']), 'payment')
         ->create([
-            'channel_id' => core()->getAllChannels()->first()->id,
-            'status'     => 'pending',
+            'channel_id'     => core()->getAllChannels()->first()->id,
+            'status'         => 'pending',
+            'customer_email' => fake()->safeEmail(),
         ]);
 
     Event::dispatch('checkout.order.save.after', $order);
@@ -117,8 +118,9 @@ it('enrols on shipment save', function () {
     $flow = makeTriggerFlow('order_shipped');
 
     $order = Order::factory()->create([
-        'channel_id' => core()->getAllChannels()->first()->id,
-        'status'     => 'processing',
+        'channel_id'     => core()->getAllChannels()->first()->id,
+        'status'         => 'processing',
+        'customer_email' => fake()->safeEmail(),
     ]);
 
     $shipment = Shipment::factory()->create(['order_id' => $order->id]);

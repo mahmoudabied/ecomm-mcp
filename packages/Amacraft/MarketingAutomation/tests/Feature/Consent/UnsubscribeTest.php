@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Mail;
-use Webkul\Customer\Models\Customer;
 use Amacraft\MarketingAutomation\DTOs\TriggerEvent;
 use Amacraft\MarketingAutomation\Engine\EnrolmentService;
 use Amacraft\MarketingAutomation\Enums\ConsentSource;
@@ -17,6 +15,8 @@ use Amacraft\MarketingAutomation\Models\MessageLog;
 use Amacraft\MarketingAutomation\Repositories\FlowRepository;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\SignedToken;
+use Illuminate\Support\Facades\Mail;
+use Webkul\Customer\Models\Customer;
 
 beforeEach(function () {
     Mail::fake();
@@ -93,7 +93,7 @@ it('carries the one-click unsubscribe url and headers on marketing email', funct
     Mail::assertSent(AutomationMail::class, function ($mail) {
         $headers = $mail->build()->headers();
 
-        expect($headers->text['List-Unsubscribe'])->toContain(route('shop.automation.unsubscribe', ''))
+        expect($headers->text['List-Unsubscribe'])->toContain(url('automation/unsubscribe/'))
             ->and($headers->text['List-Unsubscribe-Post'])->toBe('List-Unsubscribe=One-Click');
 
         return true;

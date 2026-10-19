@@ -183,7 +183,7 @@ it('restores a guest cart from a valid token', function () {
         ->assertRedirect(route('shop.checkout.cart.index'));
 
     expect(session('cart')->id)->toBe($cart->id)
-        ->and($cart->refresh()->is_active)->toBe(1);
+        ->and((bool) $cart->refresh()->is_active)->toBeTrue();
 });
 
 it('rejects an expired or unknown token with a warning', function () {
@@ -219,7 +219,7 @@ it('reactivates the cart of a logged-in customer', function () {
         ->get(route('shop.automation.cart.restore', $token))
         ->assertRedirect(route('shop.checkout.cart.index'));
 
-    expect($cart->refresh()->is_active)->toBe(1)
+    expect((bool) $cart->refresh()->is_active)->toBeTrue()
         ->and($abandoned->refresh()->restored_cart_id)->toBeNull();
 });
 
@@ -253,7 +253,7 @@ it('copies only the items of a customer cart into a guest cart, never the addres
     expect($restoredCartId)->not->toBeNull()
         ->and($restoredCartId)->not->toBe($cart->id)
         ->and(session('cart')->id)->toBe($restoredCartId)
-        ->and($cart->refresh()->is_active)->toBe(0);
+        ->and((bool) $cart->refresh()->is_active)->toBeFalse();
 
     $restored = Cart::query()->find($restoredCartId);
 
@@ -489,7 +489,7 @@ it('refuses the restore link once the cart was ordered', function () {
         ->assertRedirect(route('shop.checkout.cart.index'))
         ->assertSessionHas('warning', trans('marketing_automation::app.shop.restore.expired'));
 
-    expect($cart->refresh()->is_active)->toBe(0);
+    expect((bool) $cart->refresh()->is_active)->toBeFalse();
 });
 
 it('leaves another customer\'s cart untouched when a logged-in customer opens the link', function () {
@@ -509,7 +509,7 @@ it('leaves another customer\'s cart untouched when a logged-in customer opens th
         ->get(route('shop.automation.cart.restore', $token))
         ->assertRedirect(route('shop.checkout.cart.index'));
 
-    expect($cart->refresh()->is_active)->toBe(0)
+    expect((bool) $cart->refresh()->is_active)->toBeFalse()
         ->and((int) $cart->customer_id)->toBe($owner->id)
         ->and($abandoned->refresh()->restored_cart_id)->toBeNull();
 });

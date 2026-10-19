@@ -1,9 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Event;
-use Webkul\Core\Models\Channel;
-use Webkul\Core\Models\SubscribersList;
-use Webkul\Customer\Models\Customer;
 use Amacraft\MarketingAutomation\Enums\ConsentSource;
 use Amacraft\MarketingAutomation\Enums\ConsentStatus;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
@@ -11,6 +7,10 @@ use Amacraft\MarketingAutomation\Models\Contact;
 use Amacraft\MarketingAutomation\Models\Enrolment;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\ContactResolver;
+use Illuminate\Support\Facades\Event;
+use Webkul\Core\Models\Channel;
+use Webkul\Core\Models\SubscribersList;
+use Webkul\Customer\Models\Customer;
 
 function makeContactResolver(): ContactResolver
 {
@@ -154,5 +154,5 @@ it('unsubscribes the newsletter row when email consent is revoked', function () 
 
     app(ConsentService::class)->revoke($contact, MessageChannel::Email, ConsentSource::UnsubscribeLink);
 
-    expect($subscriber->refresh()->is_subscribed)->toBe(0);
+    expect((bool) $subscriber->refresh()->is_subscribed)->toBeFalse();
 });

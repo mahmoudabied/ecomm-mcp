@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Collection;
-use Webkul\Customer\Models\Customer;
 use Amacraft\MarketingAutomation\DTOs\TriggerEvent;
 use Amacraft\MarketingAutomation\Engine\EnrolmentService;
 use Amacraft\MarketingAutomation\Enums\ConsentSource;
@@ -17,6 +15,8 @@ use Amacraft\MarketingAutomation\Models\MessageLog;
 use Amacraft\MarketingAutomation\Repositories\FlowRepository;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\SignedToken;
+use Illuminate\Support\Collection;
+use Webkul\Customer\Models\Customer;
 
 beforeEach(function () {
     core()->getAllChannels()->first()->forceFill(['timezone' => 'UTC'])->save();
@@ -93,7 +93,7 @@ it('renders the unsubscribe link inside a template footer block', function () {
 
     $log = MessageLog::query()->where('contact_id', $contact->id)->sole();
 
-    expect($log->rendered_body)->toContain(route('shop.automation.unsubscribe', ''))
+    expect($log->rendered_body)->toContain(url('automation/unsubscribe/'))
         ->and($log->rendered_body)->toContain('Thanks');
 });
 

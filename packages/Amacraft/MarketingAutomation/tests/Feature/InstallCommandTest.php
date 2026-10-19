@@ -1,14 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Artisan;
-use Webkul\Core\Models\Channel;
-use Webkul\Core\Models\SubscribersList;
 use Amacraft\MarketingAutomation\Enums\ConsentSource;
 use Amacraft\MarketingAutomation\Enums\ConsentStatus;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
 use Amacraft\MarketingAutomation\Models\Consent;
 use Amacraft\MarketingAutomation\Models\ConsentEvent;
 use Amacraft\MarketingAutomation\Models\Contact;
+use Illuminate\Support\Facades\Artisan;
+use Webkul\Core\Models\Channel;
+use Webkul\Core\Models\SubscribersList;
 
 function createSubscriber(string $email, int $isSubscribed): SubscribersList
 {
@@ -37,7 +37,7 @@ it('migrates only subscribed newsletter rows into email consent', function () {
         ->and(Consent::query()
             ->whereIn('channel', [MessageChannel::Sms->value, MessageChannel::Whatsapp->value])
             ->count())->toBe(0)
-        ->and($subscribed->refresh()->is_subscribed)->toBe(1);
+        ->and((bool) $subscribed->refresh()->is_subscribed)->toBeTrue();
 });
 
 it('is idempotent across repeated runs', function () {
