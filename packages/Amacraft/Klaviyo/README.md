@@ -5,24 +5,26 @@ Optional connector between [amacraft/bagisto-marketing-automation](../MarketingA
 ## Features
 
 - **Routing** — per sales channel and per flow template, choose *native* or *Klaviyo*. When Klaviyo is routed but no active connection exists, the package falls back to native sending.
-- **Historical sync** — push customers, orders (last twelve months) and the catalog of the connection's channel into Klaviyo, chunked through the outbox with progress shown in the admin. Customer sync is scoped to the connection's own channel.
+- **Historical sync** — push customers, orders (last twelve months) and the catalog of the connection's channel into Klaviyo, chunked through the outbox with progress shown in the admin. Customer sync is scoped to the connection's own channel; customers without a channel are not synced.
 - **Consent mirroring** — granted and revoked store consents become Klaviyo subscribe/unsubscribe events; Klaviyo-sourced changes are never echoed back.
-- **Unsubscribe pull** — `klaviyo:pull-consent` fetches unsubscribe events with `include=profile,metric` and revokes the matching store consents per channel, keeping a cursor per connection.
+- **Unsubscribe pull** — `klaviyo:pull-consent` fetches the events of each unsubscribe metric oldest-first and revokes the matching store consents per channel. The cursor per connection only moves forward once every page was read, so a failed request is retried on the next run.
 
 ## Requirements
 
 | | |
 |---|---|
-| amacraft/bagisto-marketing-automation | same version (installed automatically) |
+| amacraft/bagisto-marketing-automation | ^1.0 (installed automatically) |
 | Bagisto | 2.3.x |
 | PHP | 8.2 – 8.4 |
 | Klaviyo | private API key with **Read/Write** access |
 
 ## Installation
 
+With the `packages/Amacraft/*` path repository from the Marketing Automation README in place:
+
 ```bash
-composer require amacraft/bagisto-klaviyo
-php artisan vendor:publish --tag=klaviyo-config # if you published the MA config before
+composer require amacraft/bagisto-klaviyo:^1.0
+php artisan migrate
 ```
 
 Connect an account under **Admin → Settings → Marketing Automation → Klaviyo**: paste the private API key, test the connection, then start a historical sync per entity if you want existing data in Klaviyo.
@@ -57,9 +59,11 @@ php artisan migrate
 
 ## Uninstall
 
+Run the uninstall command while the connector is still installed, so it can find its migrations:
+
 ```bash
+php artisan automation:uninstall --force   # drops the automation and Klaviyo tables and settings
 composer remove amacraft/bagisto-klaviyo
-php artisan automation:uninstall --force   # also drops Klaviyo tables and settings
 ```
 
 ## License

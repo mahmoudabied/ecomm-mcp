@@ -16,7 +16,10 @@ Software.
    2.1. You may not redistribute, resell, rent, lease, sublicense or publish
    the Software or any part of it.
    2.2. You may not modify, translate or create derivative works of the
-   Software, except to the extent permitted by mandatory law.
+   Software, except to the extent permitted by mandatory law. You may
+   publish and customise the configuration, views and translation files
+   the Software offers through `php artisan vendor:publish` for use on the
+   licensed store.
    2.3. You may not remove or alter any proprietary notices in the Software.
    2.4. You may not use the Software to build a product that competes with
    the Software.

@@ -6,11 +6,11 @@ Works out of the box on a stock Bagisto store: `composer require` plus one insta
 
 ## Features
 
-- **Flow builder** — draft, version and activate journeys built from prebuilt templates (abandoned cart, welcome, win-back, back-in-stock) or your own step graphs: triggers, delays, conditions, email/SMS/WhatsApp sends, coupon steps, exits.
+- **Flow builder** — draft, version and activate journeys built from prebuilt templates (abandoned cart recovery, welcome series, post-purchase review, win-back, order status updates, back-in-stock alerts) or your own step graphs: triggers, delays, conditions, email/SMS/WhatsApp sends, coupon steps, exits.
 - **Abandoned-cart recovery** — idle-cart detection with signed, expiring restore links (guest carts included), click attribution and order-goal conversion tracking.
 - **Consent engine** — per-channel consent with full event history, double opt-in for guests (signed confirmation links by mail, or a provider message for SMS/WhatsApp), quiet hours, frequency caps and one-click unsubscribe (RFC 8058).
 - **Providers** — Twilio (SMS/WhatsApp), Vonage, MessageBird, Unifonic, Msegat, Taqnyat and Meta Cloud API, with signature-verified webhooks, template sync and delivery receipts.
-- **Back-in-stock** — scoped transactional notifications with phone validation, per-phone/per-IP throttling and trigger-key rotation for repeat notifications.
+- **Back-in-stock** — scoped transactional notifications with phone validation, per-IP/per-phone/per-email throttling and trigger-key rotation for repeat notifications.
 - **Reporting** — flow report, per-enrolment journey drawer, message events, attribution (click and conversion windows) and a consent audit command.
 - **GDPR** — contact data erasure on customer deletion, a downloadable marketing-data export and configurable retention purging.
 - **Optional Klaviyo connector** — see `amacraft/bagisto-klaviyo`.
@@ -27,12 +27,23 @@ Works out of the box on a stock Bagisto store: `composer require` plus one insta
 
 ## Installation
 
+The packages are not on Packagist. Unzip the download into your Bagisto root so you get `packages/Amacraft/MarketingAutomation` (and `packages/Amacraft/Klaviyo`), then register them as a path repository in your root `composer.json`:
+
+```json
+"repositories": {
+    "amacraft": {
+        "type": "path",
+        "url": "packages/Amacraft/*"
+    }
+}
+```
+
 ```bash
-composer require amacraft/bagisto-marketing-automation
+composer require amacraft/bagisto-marketing-automation:^1.0
 php artisan automation:install
 ```
 
-`automation:install` runs the package migrations, publishes the precompiled styles to `public/vendor/marketing-automation`, migrates existing newsletter subscribers into email consent and prints the remaining setup steps.
+`automation:install` runs `php artisan migrate` (which also applies any other pending migrations of your application), publishes the precompiled styles to `public/vendor/marketing-automation`, migrates existing newsletter subscribers into email consent and prints the remaining setup steps.
 
 Finally add the scheduler to cron if it is not there yet:
 
@@ -42,7 +53,7 @@ Finally add the scheduler to cron if it is not there yet:
 
 ### Cron and queues
 
-Four commands run on the scheduler: `automation:dispatch-due` (every minute), `automation:detect-abandoned-carts` (every five minutes), `automation:daily-triggers` (hourly) and `automation:purge-logs` (daily). All hold a 10-minute lock and run once per server.
+Four commands run on the scheduler: `automation:dispatch-due` (every minute), `automation:detect-abandoned-carts` (every five minutes), `automation:daily-triggers` (hourly) and `automation:purge-logs` (daily). All hold a 10-minute lock and run on one server only, which needs a cache store with atomic locks shared by all servers (`redis`, `database` or `memcached`) when you run more than one.
 
 Message sending runs on queues. Set `QUEUE_CONNECTION=database` (or `redis`) and run a worker that listens to the package queues:
 
@@ -54,7 +65,14 @@ Queue names are configurable in `config/marketing-automation.php` (publish with 
 
 ### Styles on a stock store
 
-The storefront and admin snippets rely on a small precompiled stylesheet (the stock bundles purge utilities they have never seen). `automation:install` publishes it to `public/vendor/marketing-automation/`; re-publish any time with `php artisan vendor:publish --tag=ma-css --force`.
+The storefront and admin snippets rely on a small precompiled stylesheet (the stock bundles purge utilities they have never seen). Every rule is scoped under the `.ma-root` wrapper of the package views, so it never changes your theme's own markup. `automation:install` publishes it to `public/vendor/marketing-automation/`; re-publish any time with `php artisan vendor:publish --tag=ma-css --force`.
+
+### Customising views and translations
+
+```bash
+php artisan vendor:publish --tag=ma-views   # resources/views/vendor/marketing_automation
+php artisan vendor:publish --tag=ma-lang    # lang/vendor/marketing_automation
+```
 
 ## Provider setup
 
@@ -78,7 +96,9 @@ WhatsApp sending always uses an approved template; sync templates on the connect
 
 ## Double opt-in
 
-`Settings → Marketing Automation → Consent` exposes **Require double opt-in for guests** (on by default). Guest consent requests (checkout capture, signup checkboxes) then stay *pending* until the signed confirmation link is followed — by mail, or for SMS/WhatsApp through the provider. WhatsApp confirmations need an approved utility template with one body variable; set its name with `MA_WHATSAPP_CONFIRM_TEMPLATE` (default `consent_confirm`). Logged-in customers grant directly.
+`Settings → Marketing Automation → Consent` exposes **Require double opt-in for guests** (on by default). Guest consent requests (checkout capture, signup checkboxes) then stay *pending* until the signed confirmation link is followed — by mail, or for SMS/WhatsApp through the provider. WhatsApp confirmations need an approved utility template with one body variable; set its name with `MA_WHATSAPP_CONFIRM_TEMPLATE` (default `consent_confirm`). Logged-in customers grant directly. A guest request never downgrades a consent that is already granted.
+
+Confirmations are sent from the queue, never during checkout, and are capped at 3 per email address or phone per day and at `MA_CONFIRM_DAILY_LIMIT` (default 500) per channel per store per day, so scripted sign-ups cannot run up your SMS bill.
 
 ## Optional Klaviyo connector
 
@@ -98,6 +118,7 @@ If your store uses `spatie/laravel-multitenancy`, declare the package jobs as no
     \Amacraft\MarketingAutomation\Jobs\ProcessEnrolmentStep::class,
     \Amacraft\MarketingAutomation\Jobs\ProcessWebhook::class,
     \Amacraft\MarketingAutomation\Jobs\RecordMessageEvent::class,
+    \Amacraft\MarketingAutomation\Jobs\SendConsentConfirmation::class,
     \Amacraft\MarketingAutomation\Jobs\SyncWhatsAppTemplates::class,
 ],
 ```
@@ -113,11 +134,13 @@ php artisan vendor:publish --tag=ma-css --force
 ## Uninstall
 
 ```bash
+php artisan automation:uninstall --pretend   # optional: print the SQL without changing anything
 php artisan automation:uninstall --force
+composer remove amacraft/bagisto-klaviyo     # if installed
 composer remove amacraft/bagisto-marketing-automation
 ```
 
-The command rolls the package migrations back by path and deletes every stored `marketing_automation.*` and `klaviyo.*` setting. Data cannot be recovered.
+Run the uninstall command **before** `composer remove`. It resets every migration of the package (and of the Klaviyo connector, when installed), whatever batch it ran in, and deletes every stored `marketing_automation.*` and `klaviyo.*` setting. Data cannot be recovered.
 
 ## FAQ
 
