@@ -4,7 +4,9 @@ namespace Amacraft\MarketingAutomation\Console\Commands;
 
 use Amacraft\Klaviyo\Providers\KlaviyoServiceProvider;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 use ReflectionClass;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Webkul\Core\Models\CoreConfig;
 
 class UninstallCommand extends Command
@@ -23,7 +25,7 @@ class UninstallCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Roll back marketing automation tables and remove its stored settings';
+    protected $description = 'Roll back marketing automation tables and remove its stored settings and published styles';
 
     /**
      * Config code prefixes owned by the package and its optional connector.
@@ -57,6 +59,8 @@ class UninstallCommand extends Command
 
         $this->forgetSettings();
 
+        File::deleteDirectory(public_path('vendor/marketing-automation'));
+
         $this->info(trans('marketing_automation::app.commands.uninstall.completed'));
 
         return self::SUCCESS;
@@ -82,12 +86,28 @@ class UninstallCommand extends Command
      */
     protected function rollbackPackage(string $migrationsPath): void
     {
-        $this->call('migrate:reset', [
+        $output = new BufferedOutput;
+
+        $this->runCommand('migrate:reset', [
             '--path'     => $migrationsPath,
             '--realpath' => true,
             '--force'    => true,
             '--pretend'  => (bool) $this->option('pretend'),
-        ]);
+        ], $output);
+
+        $this->relayWithoutHostNoise($output->fetch());
+    }
+
+    /**
+     * Echo the reset output minus the "Migration not found" line migrate:reset prints for every host migration.
+     */
+    protected function relayWithoutHostNoise(string $output): void
+    {
+        foreach (preg_split('/\R/', $output) as $line) {
+            if (! str_contains($line, 'Migration not found')) {
+                $this->output->writeln($line);
+            }
+        }
     }
 
     /**

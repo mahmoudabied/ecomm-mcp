@@ -38,15 +38,20 @@ it('drops every package table across all migration batches', function () {
     foreach ($tables as $table) {
         expect($output)->toMatch("/drop table if exists [`\"]?{$table}[`\"]?/i");
     }
+
+    expect($output)->not->toContain('Migration not found');
 });
 
-it('keeps the stored settings on a dry run', function () {
+it('keeps the stored settings and published styles on a dry run', function () {
     CoreConfig::query()->create([
         'code'  => 'marketing_automation.general.settings.enabled',
         'value' => '1',
     ]);
 
+    Artisan::call('vendor:publish', ['--tag' => 'ma-css', '--force' => true]);
+
     Artisan::call('automation:uninstall', ['--pretend' => true]);
 
-    expect(CoreConfig::query()->where('code', 'marketing_automation.general.settings.enabled')->exists())->toBeTrue();
+    expect(CoreConfig::query()->where('code', 'marketing_automation.general.settings.enabled')->exists())->toBeTrue()
+        ->and(public_path('vendor/marketing-automation/ma-shop.css'))->toBeFile();
 });

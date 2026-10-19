@@ -140,7 +140,7 @@ composer remove amacraft/bagisto-klaviyo     # if installed
 composer remove amacraft/bagisto-marketing-automation
 ```
 
-Run the uninstall command **before** `composer remove`. It resets every migration of the package (and of the Klaviyo connector, when installed), whatever batch it ran in, and deletes every stored `marketing_automation.*` and `klaviyo.*` setting. Data cannot be recovered.
+Run the uninstall command **before** `composer remove`. It resets every migration of the package (and of the Klaviyo connector, when installed), whatever batch it ran in, deletes every stored `marketing_automation.*` and `klaviyo.*` setting and removes the published styles in `public/vendor/marketing-automation`. Data cannot be recovered.
 
 ## FAQ
 
