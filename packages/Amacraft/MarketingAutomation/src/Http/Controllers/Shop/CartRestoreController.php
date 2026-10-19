@@ -10,9 +10,9 @@ use Amacraft\MarketingAutomation\Services\RestoreToken;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Webkul\Checkout\Cart as CartHelper;
-use Webkul\Checkout\Contracts\Cart;
+use Webkul\Checkout\Contracts\Cart as CartContract;
 use Webkul\Checkout\Contracts\CartItem;
+use Webkul\Checkout\Facades\Cart;
 use Webkul\Checkout\Repositories\CartRepository;
 use Webkul\Customer\Contracts\Customer;
 
@@ -25,7 +25,6 @@ class CartRestoreController extends Controller
         protected AbandonedCartRepository $abandonedCartRepository,
         protected CartRepository $cartRepository,
         protected MessageLogRepository $messageLogRepository,
-        protected CartHelper $cartHelper,
         protected RestoreToken $restoreToken,
     ) {}
 
@@ -55,7 +54,7 @@ class CartRestoreController extends Controller
     /**
      * Route the cart to the restore strategy that fits the visitor.
      */
-    protected function restoreCart(AbandonedCart $abandoned, Cart $cart): void
+    protected function restoreCart(AbandonedCart $abandoned, CartContract $cart): void
     {
         $customer = auth()->guard('customer')->user();
 
@@ -71,16 +70,16 @@ class CartRestoreController extends Controller
             return;
         }
 
-        $this->cartHelper->setCart($this->cartRepository->update(['is_active' => 1], $cart->id));
+        Cart::setCart($this->cartRepository->update(['is_active' => 1], $cart->id));
     }
 
     /**
      * Activate the customer's own cart or merge a guest cart into it; never touch another customer's cart.
      */
-    protected function restoreForCustomer(Cart $cart, Customer $customer): void
+    protected function restoreForCustomer(CartContract $cart, Customer $customer): void
     {
         if ((int) $cart->customer_id === (int) $customer->id) {
-            $this->cartHelper->activateCart($cart->id);
+            Cart::activateCart($cart->id);
 
             return;
         }
@@ -89,15 +88,15 @@ class CartRestoreController extends Controller
             return;
         }
 
-        $this->cartHelper->setCart($this->cartRepository->update(['is_active' => 1], $cart->id));
+        Cart::setCart($this->cartRepository->update(['is_active' => 1], $cart->id));
 
-        $this->cartHelper->mergeCart($customer);
+        Cart::mergeCart($customer);
     }
 
     /**
      * Copy a customer's cart into the guest's cart without a login redirect, and retire the original.
      */
-    protected function copyIntoGuestCart(AbandonedCart $abandoned, Cart $cart): void
+    protected function copyIntoGuestCart(AbandonedCart $abandoned, CartContract $cart): void
     {
         $this->cartRepository->update(['is_active' => 0], $cart->id);
 
@@ -105,13 +104,13 @@ class CartRestoreController extends Controller
             $this->addToCurrentCart($item);
         }
 
-        $guestCart = $this->cartHelper->getCart();
+        $guestCart = Cart::getCart();
 
         if ($guestCart === null) {
             return;
         }
 
-        $this->cartHelper->collectTotals();
+        Cart::collectTotals();
 
         $this->abandonedCartRepository->update(['restored_cart_id' => $guestCart->id], $abandoned->id);
     }
@@ -131,7 +130,7 @@ class CartRestoreController extends Controller
         }
 
         try {
-            $this->cartHelper->addProduct($product, [
+            Cart::addProduct($product, [
                 'product_id' => $item->product_id,
                 'quantity'   => $item->quantity,
             ] + ($item->additional ?? []));

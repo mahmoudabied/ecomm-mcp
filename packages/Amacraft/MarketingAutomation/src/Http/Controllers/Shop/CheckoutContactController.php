@@ -14,7 +14,7 @@ use Amacraft\MarketingAutomation\Services\ContactCookie;
 use Amacraft\MarketingAutomation\Services\ContactResolver;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
-use Webkul\Checkout\Cart as CartHelper;
+use Webkul\Checkout\Facades\Cart;
 use Webkul\Checkout\Repositories\CartRepository;
 use Webkul\Core\Models\Channel;
 
@@ -29,7 +29,6 @@ class CheckoutContactController extends Controller
         protected ConsentService $consentService,
         protected ConsentConfirmation $confirmation,
         protected ChannelUrl $channelUrl,
-        protected CartHelper $cartHelper,
         protected CartRepository $cartRepository,
     ) {}
 
@@ -38,7 +37,7 @@ class CheckoutContactController extends Controller
      */
     public function store(CheckoutContactRequest $request): Response
     {
-        $cart = $this->cartHelper->getCart();
+        $cart = Cart::getCart();
 
         $channelId = (int) ($cart?->channel_id ?: core()->getCurrentChannel()->id);
 

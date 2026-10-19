@@ -1,6 +1,8 @@
 <?php
 
 use Amacraft\MarketingAutomation\Enums\AbandonedCartStatus;
+use Amacraft\MarketingAutomation\Http\Controllers\Shop\CheckoutContactController;
+use Amacraft\MarketingAutomation\Http\Requests\CheckoutContactRequest;
 use Amacraft\MarketingAutomation\Models\AbandonedCart;
 use Amacraft\MarketingAutomation\Models\Contact;
 use Amacraft\MarketingAutomation\Models\Enrolment;
@@ -445,4 +447,21 @@ it('wires the checkout contact capture to the dot-named address inputs', functio
         ->and($html)->toContain("document.addEventListener('focusout'")
         ->and($html)->toContain("document.addEventListener('change'")
         ->and($html)->toContain("element.name.endsWith('.' + field)");
+});
+
+it('stores the guest email on the cart even when the controller is built before the session starts', function () {
+    $cart = abCart(['customer_email' => null], 0);
+
+    // Laravel builds controllers while gathering route middleware, before the session is started.
+    $controller = app(CheckoutContactController::class);
+
+    session()->put('cart', (object) ['id' => $cart->id]);
+
+    $request = CheckoutContactRequest::create('/', 'POST', ['email' => 'late-session@example.com']);
+
+    $request->setContainer(app())->setRedirector(app('redirect'))->validateResolved();
+
+    $controller->store($request);
+
+    expect(Cart::query()->find($cart->id)->customer_email)->toBe('late-session@example.com');
 });
