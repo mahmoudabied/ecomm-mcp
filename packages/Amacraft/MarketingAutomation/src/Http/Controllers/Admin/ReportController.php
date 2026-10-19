@@ -2,15 +2,15 @@
 
 namespace Amacraft\MarketingAutomation\Http\Controllers\Admin;
 
-use Carbon\Carbon;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Routing\Controller;
 use Amacraft\MarketingAutomation\DataGrids\EnrolmentDataGrid;
 use Amacraft\MarketingAutomation\Models\Enrolment;
 use Amacraft\MarketingAutomation\Models\Flow;
 use Amacraft\MarketingAutomation\Models\MessageLog;
 use Amacraft\MarketingAutomation\Repositories\StepStatRepository;
 use Amacraft\MarketingAutomation\Services\RecipientMasker;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controller;
 
 class ReportController extends Controller
 {
@@ -59,7 +59,7 @@ class ReportController extends Controller
     {
         $this->authorizeReports();
 
-        return app(EnrolmentDataGrid::class)->toJson();
+        return datagrid(EnrolmentDataGrid::class)->process();
     }
 
     /**

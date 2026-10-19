@@ -2,12 +2,6 @@
 
 namespace Amacraft\MarketingAutomation\Http\Controllers\Admin;
 
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Str;
-use Illuminate\View\View;
-use Throwable;
-use Webkul\Admin\Http\Controllers\Controller;
 use Amacraft\MarketingAutomation\Contracts\Providers\WhatsAppTemplateSource;
 use Amacraft\MarketingAutomation\DataGrids\ProviderDataGrid;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
@@ -22,6 +16,12 @@ use Amacraft\MarketingAutomation\Models\ProviderConnection;
 use Amacraft\MarketingAutomation\Repositories\ProviderConnectionRepository;
 use Amacraft\MarketingAutomation\Services\PhoneNormalizer;
 use Amacraft\MarketingAutomation\Services\ProviderManager;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
+use Throwable;
+use Webkul\Admin\Http\Controllers\Controller;
 
 class ProviderController extends Controller
 {
@@ -43,7 +43,7 @@ class ProviderController extends Controller
         }
 
         if (request()->ajax()) {
-            return app(ProviderDataGrid::class)->toJson();
+            return datagrid(ProviderDataGrid::class)->process();
         }
 
         return view('marketing_automation::admin.providers.index', [

@@ -2,9 +2,6 @@
 
 namespace Amacraft\MarketingAutomation\Http\Controllers\Admin;
 
-use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\ValidationException;
-use Webkul\Admin\Http\Controllers\Controller;
 use Amacraft\MarketingAutomation\Database\Seeders\FlowTemplates;
 use Amacraft\MarketingAutomation\DataGrids\FlowDataGrid;
 use Amacraft\MarketingAutomation\Enums\FlowStatus;
@@ -16,6 +13,9 @@ use Amacraft\MarketingAutomation\Models\WhatsAppTemplate;
 use Amacraft\MarketingAutomation\Rendering\ContextBuilder;
 use Amacraft\MarketingAutomation\Rendering\MessageRenderer;
 use Amacraft\MarketingAutomation\Repositories\FlowRepository;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
+use Webkul\Admin\Http\Controllers\Controller;
 
 class FlowController extends Controller
 {
@@ -34,7 +34,7 @@ class FlowController extends Controller
         $this->authorizeRead();
 
         if (request()->ajax()) {
-            return app(FlowDataGrid::class)->toJson();
+            return datagrid(FlowDataGrid::class)->process();
         }
 
         return view('marketing_automation::admin.flows.index', [
