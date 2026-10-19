@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Webkul\AmacommerceTheme\Providers\AmacommerceThemeServiceProvider;
 use Webkul\Attribute\Models\Attribute;
 use Webkul\Checkout\Models\Cart;
 use Webkul\Checkout\Models\CartItem;
@@ -12,19 +13,40 @@ use Webkul\Product\Models\ProductAttributeValue;
 use Webkul\Product\Models\ProductFlat;
 use Webkul\Product\Models\ProductInventory;
 
-beforeEach(function () {
-    $channel = core()->getCurrentChannel();
+/**
+ * The shop themes installed in this app; the amacommerce theme only exists
+ * when its package is required, so stock installs just get the default one.
+ */
+function installedShopThemes(): array
+{
+    $themes = ['default'];
 
-    $channel->forceFill(['theme' => 'amacommerce'])->save();
-});
+    if (class_exists(AmacommerceThemeServiceProvider::class)) {
+        $themes[] = 'amacommerce';
+    }
 
-it('injects the consent checkboxes into the amacommerce signup page', function () {
+    return $themes;
+}
+
+/**
+ * Point the current channel at the theme under test.
+ */
+function useTheme(string $theme): void
+{
+    core()->getCurrentChannel()->forceFill(['theme' => $theme])->save();
+}
+
+it('injects the consent checkboxes into the :theme signup page', function (string $theme) {
+    useTheme($theme);
+
     $this->get(route('shop.customers.register.index'))
         ->assertOk()
         ->assertSee('id="ma-consent-checkboxes"', escape: false);
-});
+})->with(installedShopThemes());
 
-it('injects the contact capture into the amacommerce checkout page', function () {
+it('injects the contact capture into the :theme checkout page', function (string $theme) {
+    useTheme($theme);
+
     app(CoreConfigRepository::class)->create([
         'sales'   => ['checkout' => ['shopping_cart' => ['allow_guest_checkout' => 1]]],
         'channel' => core()->getCurrentChannel()->code,
@@ -66,9 +88,11 @@ it('injects the contact capture into the amacommerce checkout page', function ()
     $this->get(route('shop.checkout.onepage.index'))
         ->assertOk()
         ->assertSee('id="ma-contact-capture"', escape: false);
-});
+})->with(installedShopThemes());
 
-it('injects the back-in-stock form into the amacommerce product page', function () {
+it('injects the back-in-stock form into the :theme product page', function (string $theme) {
+    useTheme($theme);
+
     $channelCode = core()->getCurrentChannel()->code;
 
     $product = Product::factory()->create(['type' => 'simple']);
@@ -94,13 +118,15 @@ it('injects the back-in-stock form into the amacommerce product page', function 
     $this->get(route('shop.product_or_category.index', $product->sku))
         ->assertOk()
         ->assertSee('id="ma-back-in-stock"', escape: false);
-});
+})->with(installedShopThemes());
 
-it('injects the preferences link into the amacommerce profile page', function () {
+it('injects the preferences link into the :theme profile page', function (string $theme) {
+    useTheme($theme);
+
     $customer = Customer::factory()->create();
 
     $this->actingAs($customer, 'customer')
         ->get(route('shop.customers.account.profile.edit'))
         ->assertOk()
         ->assertSee('id="ma-preferences-link"', escape: false);
-});
+})->with(installedShopThemes());

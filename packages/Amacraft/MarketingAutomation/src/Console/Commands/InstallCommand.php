@@ -45,6 +45,8 @@ class InstallCommand extends Command
     {
         $this->call('migrate', ['--force' => true]);
 
+        $this->publishStyles();
+
         $seeder->run();
 
         $migrated = 0;
@@ -105,6 +107,18 @@ class InstallCommand extends Command
         if (! $report['queue_ok']) {
             $this->warn(trans('marketing_automation::app.commands.install.queue-sync'));
         }
+    }
+
+    /**
+     * Publish the precompiled stylesheets the snippets rely on; the stock
+     * Shop and Admin bundles purge utilities they have never seen.
+     */
+    protected function publishStyles(): void
+    {
+        $this->call('vendor:publish', [
+            '--tag'   => 'ma-css',
+            '--force' => true,
+        ]);
     }
 
     /**

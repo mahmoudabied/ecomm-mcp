@@ -142,5 +142,10 @@ class MarketingAutomationServiceProvider extends ServiceProvider
         $this->publishes([
             dirname(__DIR__).'/Resources/lang' => lang_path('vendor/marketing-automation'),
         ], 'ma-lang');
+
+        $this->publishes([
+            dirname(__DIR__).'/Resources/assets/css/ma-shop.css'  => public_path('vendor/marketing-automation/ma-shop.css'),
+            dirname(__DIR__).'/Resources/assets/css/ma-admin.css' => public_path('vendor/marketing-automation/ma-admin.css'),
+        ], 'ma-css');
     }
 }

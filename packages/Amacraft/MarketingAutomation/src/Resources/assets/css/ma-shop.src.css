@@ -1,0 +1,7 @@
+/* Utilities used by the marketing automation storefront snippets.
+
+   Rebuild with the package tailwind config (see tailwind.config.js),
+   passing the shop views as the content glob.
+*/
+
+@tailwind utilities;

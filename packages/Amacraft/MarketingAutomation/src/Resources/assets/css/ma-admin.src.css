@@ -1,0 +1,7 @@
+/* Utilities used by the marketing automation admin views.
+
+   Rebuild with the package tailwind config (see tailwind.config.js),
+   passing the admin views as the content glob.
+*/
+
+@tailwind utilities;

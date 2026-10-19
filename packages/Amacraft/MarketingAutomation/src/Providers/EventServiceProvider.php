@@ -2,8 +2,6 @@
 
 namespace Amacraft\MarketingAutomation\Providers;
 
-use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Event;
 use Amacraft\MarketingAutomation\Listeners\CartListener;
 use Amacraft\MarketingAutomation\Listeners\CustomerListener;
 use Amacraft\MarketingAutomation\Listeners\GdprListener;
@@ -11,6 +9,8 @@ use Amacraft\MarketingAutomation\Listeners\NewsletterListener;
 use Amacraft\MarketingAutomation\Listeners\OrderListener;
 use Amacraft\MarketingAutomation\Listeners\ProductListener;
 use Amacraft\MarketingAutomation\Listeners\ShipmentListener;
+use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Event;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -51,6 +51,14 @@ class EventServiceProvider extends ServiceProvider
      */
     protected function registerViewHooks(): void
     {
+        Event::listen('bagisto.shop.layout.head.after', function ($viewRenderEventManager) {
+            $viewRenderEventManager->addTemplate('marketing_automation::shop.assets');
+        });
+
+        Event::listen('bagisto.admin.layout.head.after', function ($viewRenderEventManager) {
+            $viewRenderEventManager->addTemplate('marketing_automation::admin.assets');
+        });
+
         Event::listen('bagisto.shop.products.view.description.after', function ($viewRenderEventManager) {
             $viewRenderEventManager->addTemplate('marketing_automation::shop.back-in-stock');
         });
