@@ -63,3 +63,15 @@ it('forbids admins without the settings permission', function () {
     $this->get(route('admin.marketing.automation.health.index'))
         ->assertUnauthorized();
 });
+
+it('reports a stale scheduler heartbeat as not running', function () {
+    $healthCheck = app(HealthCheck::class);
+
+    $healthCheck->beat();
+
+    expect($healthCheck->report()['scheduler_ok'])->toBeTrue();
+
+    $this->travel(10)->minutes();
+
+    expect($healthCheck->report()['scheduler_ok'])->toBeFalse();
+});

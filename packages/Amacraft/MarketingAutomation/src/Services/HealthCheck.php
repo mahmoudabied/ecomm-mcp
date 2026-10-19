@@ -2,6 +2,7 @@
 
 namespace Amacraft\MarketingAutomation\Services;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 class HealthCheck
@@ -39,12 +40,12 @@ class HealthCheck
     }
 
     /**
-     * Whether the scheduler was seen in the last five minutes.
+     * Whether the scheduler was seen in the last five minutes; a comparison, since diffIn* is signed on Carbon 3.
      */
     protected function schedulerOk(mixed $lastSeenAt): bool
     {
         return $lastSeenAt !== null
-            && now()->diffInMinutes($lastSeenAt) < 5;
+            && Carbon::parse($lastSeenAt)->greaterThan(now()->subMinutes(5));
     }
 
     /**

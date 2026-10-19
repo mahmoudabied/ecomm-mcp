@@ -198,13 +198,16 @@ class ProcessEnrolmentStep implements ShouldQueue
     }
 
     /**
-     * Track how late the scheduler is running (SC-003).
+     * Track how late the scheduler is running (SC-003); a comparison, since diffIn* is signed on Carbon 3.
      */
     protected function recordDispatchLag(Enrolment $enrolment): void
     {
         Cache::increment('marketing_automation.lag.total');
 
-        if ($enrolment->next_run_at !== null && now()->diffInSeconds($enrolment->next_run_at) > 300) {
+        if (
+            $enrolment->next_run_at !== null
+            && $enrolment->next_run_at->lessThan(now()->subSeconds(300))
+        ) {
             Cache::increment('marketing_automation.lag.over_5m');
         }
     }
