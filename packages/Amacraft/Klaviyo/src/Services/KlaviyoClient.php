@@ -2,11 +2,11 @@
 
 namespace Amacraft\Klaviyo\Services;
 
+use Amacraft\Klaviyo\DTOs\ApiOutcome;
+use Amacraft\Klaviyo\Models\Connection;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Throwable;
-use Amacraft\Klaviyo\DTOs\ApiOutcome;
-use Amacraft\Klaviyo\Models\Connection;
 
 class KlaviyoClient
 {
@@ -157,12 +157,14 @@ class KlaviyoClient
     }
 
     /**
-     * Events matching a filter, one page at a time.
+     * Events matching a filter, one page at a time. Profile and metric are
+     * included so each event carries the identity and metric it refers to.
      */
     public function events(array $filter, ?string $pageCursor): array
     {
         $query = array_merge(
             ['filter' => implode(',', $filter)],
+            ['include' => 'profile,metric'],
             $pageCursor ? ['page[cursor]' => $pageCursor] : [],
         );
 

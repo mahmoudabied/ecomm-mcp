@@ -1,9 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Http;
-use Webkul\Checkout\Models\Cart;
-use Webkul\Checkout\Models\CartItem;
-use Webkul\Core\Models\CoreConfig;
 use Amacraft\Klaviyo\Models\Connection;
 use Amacraft\Klaviyo\Models\OutboxItem;
 use Amacraft\Klaviyo\Tests\KlaviyoFixtures;
@@ -18,6 +14,10 @@ use Amacraft\MarketingAutomation\Models\Flow;
 use Amacraft\MarketingAutomation\Repositories\FlowRepository;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\Settings;
+use Illuminate\Support\Facades\Http;
+use Webkul\Checkout\Models\Cart;
+use Webkul\Checkout\Models\CartItem;
+use Webkul\Core\Models\CoreConfig;
 use Webkul\Product\Models\Product;
 
 function consentFlow(): void
@@ -73,10 +73,13 @@ it('pulls Klaviyo unsubscribes and revokes the matching store consents', functio
 
     Http::fake([
         'a.klaviyo.com/api/metrics*'  => Http::response(KlaviyoFixtures::body('metrics'), 200),
-        'a.klaviyo.com/api/events*'   => Http::response(KlaviyoFixtures::body('unsubscribed_events_page'), 200),
+        'a.klaviyo.com/api/events*'   => Http::response(KlaviyoFixtures::body('unsubscribed_events_included_page'), 200),
     ]);
 
     $this->artisan('klaviyo:pull-consent')->assertSuccessful();
+
+    Http::assertSent(fn ($request) => str_contains((string) $request->url(), 'include=profile%2Cmetric')
+        || str_contains((string) $request->url(), 'include=profile,metric'));
 
     expect($consents->status($sara->fresh(), MessageChannel::Email))->toBe(ConsentStatus::Revoked)
         ->and($consents->status($omar->fresh(), MessageChannel::Sms))->toBe(ConsentStatus::Revoked)

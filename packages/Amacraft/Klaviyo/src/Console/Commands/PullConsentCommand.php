@@ -2,14 +2,14 @@
 
 namespace Amacraft\Klaviyo\Console\Commands;
 
-use Carbon\Carbon;
-use Illuminate\Console\Command;
 use Amacraft\Klaviyo\Models\Connection;
 use Amacraft\Klaviyo\Services\KlaviyoClient;
 use Amacraft\MarketingAutomation\Enums\ConsentSource;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
 use Amacraft\MarketingAutomation\Models\Contact;
 use Amacraft\MarketingAutomation\Services\ConsentService;
+use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class PullConsentCommand extends Command
 {
@@ -70,7 +70,7 @@ class PullConsentCommand extends Command
             $page = $client->events($filter, $pageCursor);
 
             foreach ($page['data'] ?? [] as $event) {
-                $this->revokeForEvent($connection, $event, $consents);
+                $this->revokeForEvent($connection, $event, $page['included'] ?? null, $consents);
 
                 $eventTime = Carbon::parse($event['attributes']['datetime'] ?? $latest)
                     ->timezone(config('app.timezone'));
@@ -114,20 +114,24 @@ class PullConsentCommand extends Command
     }
 
     /**
-     * Revoke the contact consent an unsubscribe event refers to.
+     * Revoke the contact consent an unsubscribe event refers to. Klaviyo ships
+     * the profile and metric of an event as related resources, so both are
+     * resolved from the page's top-level `included` array by relationship id.
      */
-    protected function revokeForEvent(Connection $connection, array $event, ConsentService $consents): void
+    protected function revokeForEvent(Connection $connection, array $event, ?array $included, ConsentService $consents): void
     {
-        $profile = $event['attributes']['profile']['data']['attributes'] ?? [];
+        $profile = $this->includedResource($included, 'profile', $event['relationships']['profile']['data']['id'] ?? null);
 
-        $email = $profile['email'] ?? null;
-        $phone = $profile['phone_number'] ?? null;
+        $email = $profile['attributes']['email'] ?? null;
+        $phone = $profile['attributes']['phone_number'] ?? null;
 
         if (! $email && ! $phone) {
             return;
         }
 
-        $metricName = (string) ($event['attributes']['metric']['data']['attributes']['name'] ?? '');
+        $metric = $this->includedResource($included, 'metric', $event['relationships']['metric']['data']['id'] ?? null);
+
+        $metricName = (string) ($metric['attributes']['name'] ?? '');
 
         $channel = str_contains($metricName, 'SMS') ? MessageChannel::Sms : MessageChannel::Email;
 
@@ -142,6 +146,30 @@ class PullConsentCommand extends Command
         }
 
         $consents->revoke($contact, $channel, ConsentSource::Klaviyo);
+    }
+
+    /**
+     * Find one resource of the page's included array by type and id.
+     */
+    protected function includedResource(?array $included, string $type, ?string $id): ?array
+    {
+        if (
+            $included === null
+            || $id === null
+        ) {
+            return null;
+        }
+
+        foreach ($included as $resource) {
+            if (
+                ($resource['type'] ?? null) === $type
+                && ($resource['id'] ?? null) === $id
+            ) {
+                return $resource;
+            }
+        }
+
+        return null;
     }
 
     /**
