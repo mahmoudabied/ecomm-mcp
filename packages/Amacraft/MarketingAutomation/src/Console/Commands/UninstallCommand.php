@@ -15,7 +15,8 @@ class UninstallCommand extends Command
      * @var string
      */
     protected $signature = 'automation:uninstall
-                            {--force : Roll back tables and config without asking for confirmation}';
+                            {--force : Roll back tables and config without asking for confirmation}
+                            {--pretend : Print the SQL that would run and change nothing}';
 
     /**
      * The console command description.
@@ -36,7 +37,11 @@ class UninstallCommand extends Command
      */
     public function handle(): int
     {
-        if (! $this->option('force') && ! $this->confirm(trans('marketing_automation::app.commands.uninstall.confirmation'))) {
+        if (
+            ! $this->option('force')
+            && ! $this->option('pretend')
+            && ! $this->confirm(trans('marketing_automation::app.commands.uninstall.confirmation'))
+        ) {
             $this->warn(trans('marketing_automation::app.commands.uninstall.aborted'));
 
             return self::FAILURE;
@@ -46,6 +51,10 @@ class UninstallCommand extends Command
 
         $this->rollbackPackage(dirname(__DIR__, 2).'/Database/Migrations');
 
+        if ($this->option('pretend')) {
+            return self::SUCCESS;
+        }
+
         $this->forgetSettings();
 
         $this->info(trans('marketing_automation::app.commands.uninstall.completed'));
@@ -54,8 +63,7 @@ class UninstallCommand extends Command
     }
 
     /**
-     * Roll back the optional Klaviyo connector first; its tables reference the
-     * core automation tables.
+     * Roll back the optional Klaviyo connector first, while its package code is still installed.
      */
     protected function rollbackKlaviyo(): void
     {
@@ -69,16 +77,16 @@ class UninstallCommand extends Command
     }
 
     /**
-     * Roll back one package's migrations resolved from its own path, so the
-     * command works from packages/ and vendor/ installs alike. The migrator
-     * prefixes relative paths with the app root, hence realpath.
+     * Reset every migration that ran from the package path, whatever batch it landed in.
+     * The path is absolute, so the command works from packages/ and vendor/ installs alike.
      */
     protected function rollbackPackage(string $migrationsPath): void
     {
-        $this->call('migrate:rollback', [
+        $this->call('migrate:reset', [
             '--path'     => $migrationsPath,
             '--realpath' => true,
             '--force'    => true,
+            '--pretend'  => (bool) $this->option('pretend'),
         ]);
     }
 
