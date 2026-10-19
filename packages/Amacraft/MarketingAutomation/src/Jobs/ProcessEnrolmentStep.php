@@ -2,22 +2,21 @@
 
 namespace Amacraft\MarketingAutomation\Jobs;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
-use Spatie\Multitenancy\Jobs\NotTenantAware;
-use Throwable;
 use Amacraft\MarketingAutomation\Engine\StepRunner;
 use Amacraft\MarketingAutomation\Enums\EnrolmentStatus;
 use Amacraft\MarketingAutomation\Enums\JourneyEvent;
 use Amacraft\MarketingAutomation\Enums\MessageStatus;
 use Amacraft\MarketingAutomation\Models\Enrolment;
 use Amacraft\MarketingAutomation\Models\MessageLog;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use Throwable;
 
-class ProcessEnrolmentStep implements NotTenantAware, ShouldQueue
+class ProcessEnrolmentStep implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
@@ -40,7 +39,7 @@ class ProcessEnrolmentStep implements NotTenantAware, ShouldQueue
         public int $enrolmentId,
         public ?string $lockToken = null,
     ) {
-        $this->onQueue('automation');
+        $this->onQueue(config('marketing-automation.queues.automation'));
     }
 
     /**

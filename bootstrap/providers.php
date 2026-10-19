@@ -1,7 +1,5 @@
 <?php
 
-use Amacraft\Klaviyo\Providers\KlaviyoServiceProvider;
-use Amacraft\MarketingAutomation\Providers\MarketingAutomationServiceProvider;
 use App\Providers\AppServiceProvider;
 use Webkul\Admin\Providers\AdminServiceProvider;
 use Webkul\AmacommerceTheme\Providers\AmacommerceThemeServiceProvider;
@@ -70,8 +68,6 @@ return [
     MagicAIServiceProvider::class,
     McpServiceProvider::class,
     MarketingServiceProvider::class,
-    MarketingAutomationServiceProvider::class,
-    KlaviyoServiceProvider::class,
     NotificationServiceProvider::class,
     PaymentServiceProvider::class,
     PaypalServiceProvider::class,

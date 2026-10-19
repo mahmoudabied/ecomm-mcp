@@ -2,15 +2,14 @@
 
 namespace Amacraft\MarketingAutomation\Jobs;
 
+use Amacraft\MarketingAutomation\Services\AttributionService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Spatie\Multitenancy\Jobs\NotTenantAware;
-use Amacraft\MarketingAutomation\Services\AttributionService;
 use Webkul\Sales\Models\Order;
 
-class AttributeOrder implements NotTenantAware, ShouldQueue
+class AttributeOrder implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
@@ -20,7 +19,7 @@ class AttributeOrder implements NotTenantAware, ShouldQueue
     public function __construct(
         protected int $orderId,
     ) {
-        $this->onQueue('automation');
+        $this->onQueue(config('marketing-automation.queues.automation'));
     }
 
     /**

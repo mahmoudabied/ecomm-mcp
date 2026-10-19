@@ -2,14 +2,6 @@
 
 namespace Amacraft\Klaviyo\Jobs;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\DB;
-use Spatie\Multitenancy\Jobs\NotTenantAware;
-use Throwable;
-use Webkul\Customer\Models\Customer;
 use Amacraft\Klaviyo\Models\SyncJob;
 use Amacraft\Klaviyo\Repositories\OutboxItemRepository;
 use Amacraft\Klaviyo\Services\PayloadMapper;
@@ -17,10 +9,17 @@ use Amacraft\MarketingAutomation\Enums\ConsentStatus;
 use Amacraft\MarketingAutomation\Models\Consent;
 use Amacraft\MarketingAutomation\Models\Contact;
 use Amacraft\MarketingAutomation\Services\ContactResolver;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\DB;
+use Throwable;
+use Webkul\Customer\Models\Customer;
 use Webkul\Product\Models\Product;
 use Webkul\Sales\Models\Order;
 
-class HistoricalSync implements NotTenantAware, ShouldQueue
+class HistoricalSync implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
@@ -40,7 +39,7 @@ class HistoricalSync implements NotTenantAware, ShouldQueue
     public function __construct(
         public int $syncJobId,
     ) {
-        $this->onQueue('klaviyo');
+        $this->onQueue(config('marketing-automation.queues.klaviyo'));
     }
 
     /**

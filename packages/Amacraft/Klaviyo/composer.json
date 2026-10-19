@@ -1,0 +1,43 @@
+{
+    "name": "amacraft/bagisto-klaviyo",
+    "description": "Optional Klaviyo connector for amacraft/bagisto-marketing-automation: routing, historical sync and consent pull",
+    "type": "library",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Amacraft"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "amacraft/bagisto-marketing-automation": "self.version",
+        "illuminate/support": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Amacraft\\Klaviyo\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Amacraft\\Klaviyo\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Amacraft\\Klaviyo\\Providers\\KlaviyoServiceProvider"
+            ]
+        }
+    },
+    "archive": {
+        "exclude": [
+            "/.github",
+            "/tests"
+        ]
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}

@@ -1,5 +1,14 @@
 <?php
 
+use Amacraft\Klaviyo\Jobs\FlushOutboxBatch;
+use Amacraft\Klaviyo\Jobs\HistoricalSync;
+use Amacraft\MarketingAutomation\Jobs\AttributeOrder;
+use Amacraft\MarketingAutomation\Jobs\IngestTrigger;
+use Amacraft\MarketingAutomation\Jobs\ProcessBackInStockSubscriptions;
+use Amacraft\MarketingAutomation\Jobs\ProcessEnrolmentStep;
+use Amacraft\MarketingAutomation\Jobs\ProcessWebhook;
+use Amacraft\MarketingAutomation\Jobs\RecordMessageEvent;
+use Amacraft\MarketingAutomation\Jobs\SyncWhatsAppTemplates;
 use App\Tenant\AppTenantDomainTenantFinder;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Events\CallQueuedListener;
@@ -164,5 +173,16 @@ return [
         UpdateCreateElasticSearchIndex::class,
         DeleteElasticSearchIndex::class,
         ProcessSitemap::class,
+
+        // Marketing automation packages own a single shared database.
+        AttributeOrder::class,
+        FlushOutboxBatch::class,
+        HistoricalSync::class,
+        IngestTrigger::class,
+        ProcessBackInStockSubscriptions::class,
+        ProcessEnrolmentStep::class,
+        ProcessWebhook::class,
+        RecordMessageEvent::class,
+        SyncWhatsAppTemplates::class,
     ],
 ];

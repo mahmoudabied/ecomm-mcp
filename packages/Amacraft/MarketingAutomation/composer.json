@@ -1,0 +1,43 @@
+{
+    "name": "amacraft/bagisto-marketing-automation",
+    "description": "Marketing automation for Bagisto: flows, abandoned-cart recovery, consent, email/SMS/WhatsApp messaging",
+    "type": "library",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Amacraft"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "giggsey/libphonenumber-for-php-lite": "^9.0",
+        "illuminate/support": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Amacraft\\MarketingAutomation\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Amacraft\\MarketingAutomation\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Amacraft\\MarketingAutomation\\Providers\\MarketingAutomationServiceProvider"
+            ]
+        }
+    },
+    "archive": {
+        "exclude": [
+            "/.github",
+            "/tests"
+        ]
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}

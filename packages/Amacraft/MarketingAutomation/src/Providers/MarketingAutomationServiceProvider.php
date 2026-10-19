@@ -2,21 +2,24 @@
 
 namespace Amacraft\MarketingAutomation\Providers;
 
-use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\ServiceProvider;
-use Webkul\Core\Http\Middleware\NoCacheMiddleware;
 use Amacraft\MarketingAutomation\Console\Commands\AuditConsentCommand;
 use Amacraft\MarketingAutomation\Console\Commands\DailyTriggersCommand;
 use Amacraft\MarketingAutomation\Console\Commands\DetectAbandonedCartsCommand;
 use Amacraft\MarketingAutomation\Console\Commands\DispatchDueCommand;
 use Amacraft\MarketingAutomation\Console\Commands\InstallCommand;
 use Amacraft\MarketingAutomation\Console\Commands\PurgeLogsCommand;
+use Amacraft\MarketingAutomation\Console\Commands\UninstallCommand;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\ContactResolver;
 use Amacraft\MarketingAutomation\Services\PhoneNormalizer;
 use Amacraft\MarketingAutomation\Services\ProviderManager;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+use Konekt\Concord\ConcordServiceProvider;
+use Konekt\Concord\Contracts\Concord as ConcordContract;
+use Webkul\Core\Http\Middleware\NoCacheMiddleware;
 
 class MarketingAutomationServiceProvider extends ServiceProvider
 {
@@ -25,6 +28,10 @@ class MarketingAutomationServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->register(ConcordServiceProvider::class);
+
+        $this->app->make(ConcordContract::class)->registerModule(ModuleServiceProvider::class);
+
         $this->mergeConfigFrom(
             dirname(__DIR__).'/Config/menu.php',
             'menu.admin'
@@ -45,9 +52,15 @@ class MarketingAutomationServiceProvider extends ServiceProvider
             'automation-providers'
         );
 
+        $this->mergeConfigFrom(
+            dirname(__DIR__).'/Config/marketing-automation.php',
+            'marketing-automation'
+        );
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 InstallCommand::class,
+                UninstallCommand::class,
                 DispatchDueCommand::class,
                 DailyTriggersCommand::class,
                 DetectAbandonedCartsCommand::class,
@@ -73,6 +86,8 @@ class MarketingAutomationServiceProvider extends ServiceProvider
         $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'marketing_automation');
 
         $this->loadViewsFrom(__DIR__.'/../Resources/views', 'marketing_automation');
+
+        $this->registerPublishables();
 
         Route::middleware(['web', 'admin', NoCacheMiddleware::class])
             ->prefix(config('app.admin_url'))
@@ -105,5 +120,23 @@ class MarketingAutomationServiceProvider extends ServiceProvider
                 ->daily()
                 ->withoutOverlapping();
         });
+    }
+
+    /**
+     * Publish the package config, views and translations for storefront customization.
+     */
+    protected function registerPublishables(): void
+    {
+        $this->publishes([
+            dirname(__DIR__).'/Config/marketing-automation.php' => config_path('marketing-automation.php'),
+        ], 'ma-config');
+
+        $this->publishes([
+            dirname(__DIR__).'/Resources/views' => resource_path('views/vendor/marketing-automation'),
+        ], 'ma-views');
+
+        $this->publishes([
+            dirname(__DIR__).'/Resources/lang' => lang_path('vendor/marketing-automation'),
+        ], 'ma-lang');
     }
 }

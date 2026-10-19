@@ -2,14 +2,16 @@
 
 namespace Amacraft\Klaviyo\Providers;
 
-use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\ServiceProvider;
-use Webkul\Core\Http\Middleware\NoCacheMiddleware;
 use Amacraft\Klaviyo\Console\Commands\FlushOutboxCommand;
 use Amacraft\Klaviyo\Console\Commands\PullConsentCommand;
 use Amacraft\Klaviyo\Services\KlaviyoClient;
 use Amacraft\Klaviyo\Services\OutboxWriter;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+use Konekt\Concord\ConcordServiceProvider;
+use Konekt\Concord\Contracts\Concord as ConcordContract;
+use Webkul\Core\Http\Middleware\NoCacheMiddleware;
 
 class KlaviyoServiceProvider extends ServiceProvider
 {
@@ -18,6 +20,10 @@ class KlaviyoServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->register(ConcordServiceProvider::class);
+
+        $this->app->make(ConcordContract::class)->registerModule(ModuleServiceProvider::class);
+
         $this->mergeConfigFrom(
             dirname(__DIR__).'/Config/menu.php',
             'menu.admin'
@@ -46,6 +52,8 @@ class KlaviyoServiceProvider extends ServiceProvider
 
         $this->loadViewsFrom(__DIR__.'/../Resources/views', 'klaviyo');
 
+        $this->registerPublishables();
+
         Route::middleware(['web', 'admin', NoCacheMiddleware::class])
             ->prefix(config('app.admin_url'))
             ->group(__DIR__.'/../Routes/admin-routes.php');
@@ -64,5 +72,19 @@ class KlaviyoServiceProvider extends ServiceProvider
                 ->everyFifteenMinutes()
                 ->withoutOverlapping();
         });
+    }
+
+    /**
+     * Publish the package views and translations for customization.
+     */
+    protected function registerPublishables(): void
+    {
+        $this->publishes([
+            dirname(__DIR__).'/Resources/views' => resource_path('views/vendor/klaviyo'),
+        ], 'klaviyo-views');
+
+        $this->publishes([
+            dirname(__DIR__).'/Resources/lang' => lang_path('vendor/klaviyo'),
+        ], 'klaviyo-lang');
     }
 }

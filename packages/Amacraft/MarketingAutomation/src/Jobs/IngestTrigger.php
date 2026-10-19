@@ -2,16 +2,15 @@
 
 namespace Amacraft\MarketingAutomation\Jobs;
 
+use Amacraft\MarketingAutomation\DTOs\TriggerEvent;
+use Amacraft\MarketingAutomation\Engine\EnrolmentService;
+use Amacraft\MarketingAutomation\Enums\TriggerType;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Spatie\Multitenancy\Jobs\NotTenantAware;
-use Amacraft\MarketingAutomation\DTOs\TriggerEvent;
-use Amacraft\MarketingAutomation\Engine\EnrolmentService;
-use Amacraft\MarketingAutomation\Enums\TriggerType;
 
-class IngestTrigger implements NotTenantAware, ShouldQueue
+class IngestTrigger implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
@@ -23,7 +22,7 @@ class IngestTrigger implements NotTenantAware, ShouldQueue
     public function __construct(
         protected array $trigger,
     ) {
-        $this->onQueue('automation');
+        $this->onQueue(config('marketing-automation.queues.automation'));
     }
 
     /**

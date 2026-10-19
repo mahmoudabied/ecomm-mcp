@@ -2,19 +2,18 @@
 
 namespace Amacraft\MarketingAutomation\Jobs;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Spatie\Multitenancy\Jobs\NotTenantAware;
 use Amacraft\MarketingAutomation\DTOs\TriggerEvent;
 use Amacraft\MarketingAutomation\Engine\EnrolmentService;
 use Amacraft\MarketingAutomation\Enums\FlowStatus;
 use Amacraft\MarketingAutomation\Enums\TriggerType;
 use Amacraft\MarketingAutomation\Models\BackInStockSubscription;
 use Amacraft\MarketingAutomation\Models\Flow;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
 
-class ProcessBackInStockSubscriptions implements NotTenantAware, ShouldQueue
+class ProcessBackInStockSubscriptions implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
@@ -24,7 +23,7 @@ class ProcessBackInStockSubscriptions implements NotTenantAware, ShouldQueue
     public function __construct(
         public int $productId,
     ) {
-        $this->onQueue('automation');
+        $this->onQueue(config('marketing-automation.queues.automation'));
     }
 
     /**

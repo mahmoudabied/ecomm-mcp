@@ -55,7 +55,7 @@ class OutboxWriter
     {
         FlushOutboxBatch::dispatch($connectionId)
             ->afterCommit()
-            ->onQueue('klaviyo');
+            ->onQueue(config('marketing-automation.queues.klaviyo'));
     }
 
     /**

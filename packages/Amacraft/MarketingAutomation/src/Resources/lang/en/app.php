@@ -497,7 +497,20 @@ return [
 
     'commands' => [
         'install' => [
-            'migrated' => 'Migrated :count newsletter subscriptions into email consent.',
+            'migrated'              => 'Migrated :count newsletter subscriptions into email consent.',
+            'checklist-title'       => 'Finish setting up marketing automation:',
+            'cron'                  => 'Add the scheduler to cron: :command every minute.',
+            'queues'                => 'Run a queue worker that listens to these queues: php artisan queue:work --queue=:queues --tries=3',
+            'webhook-url'           => 'For Twilio webhooks, make sure APP_URL is the public HTTPS URL of this store (or set the trusted proxies behind a load balancer), so signature checks pass.',
+            'scheduler-ok'          => 'Scheduler is running. Last heartbeat: :time.',
+            'scheduler-not-running' => 'The scheduler has not run automation:dispatch-due in the last 5 minutes. Check that the cron entry is in place.',
+            'queue-sync'            => 'QUEUE_CONNECTION is sync. Message sending will block requests; set a real queue driver and run a worker.',
+        ],
+
+        'uninstall' => [
+            'confirmation' => 'This rolls back all marketing automation tables and deletes its settings. Data cannot be recovered. Continue?',
+            'aborted'      => 'Uninstall aborted, nothing was changed.',
+            'completed'    => 'Marketing automation tables rolled back and settings removed.',
         ],
     ],
 ];

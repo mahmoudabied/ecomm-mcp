@@ -2,20 +2,19 @@
 
 namespace Amacraft\MarketingAutomation\Jobs;
 
+use Amacraft\MarketingAutomation\Enums\MessageEventType;
+use Amacraft\MarketingAutomation\Enums\MessageStatus;
+use Amacraft\MarketingAutomation\Models\MessageEvent;
+use Amacraft\MarketingAutomation\Models\MessageLog;
+use Amacraft\MarketingAutomation\Services\StatsRecorder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
-use Spatie\Multitenancy\Jobs\NotTenantAware;
-use Amacraft\MarketingAutomation\Enums\MessageEventType;
-use Amacraft\MarketingAutomation\Enums\MessageStatus;
-use Amacraft\MarketingAutomation\Models\MessageEvent;
-use Amacraft\MarketingAutomation\Models\MessageLog;
-use Amacraft\MarketingAutomation\Services\StatsRecorder;
 
-class RecordMessageEvent implements NotTenantAware, ShouldQueue
+class RecordMessageEvent implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
@@ -61,7 +60,7 @@ class RecordMessageEvent implements NotTenantAware, ShouldQueue
         protected MessageEventType $type,
         protected array $meta = [],
     ) {
-        $this->onQueue('automation');
+        $this->onQueue(config('marketing-automation.queues.automation'));
     }
 
     /**

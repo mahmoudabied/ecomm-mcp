@@ -2,19 +2,18 @@
 
 namespace Amacraft\MarketingAutomation\Jobs;
 
+use Amacraft\MarketingAutomation\Contracts\Providers\WhatsAppTemplateSource;
+use Amacraft\MarketingAutomation\Models\ProviderConnection;
+use Amacraft\MarketingAutomation\Models\WhatsAppTemplate;
+use Amacraft\MarketingAutomation\Services\ProviderManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
-use Spatie\Multitenancy\Jobs\NotTenantAware;
-use Amacraft\MarketingAutomation\Contracts\Providers\WhatsAppTemplateSource;
-use Amacraft\MarketingAutomation\Models\ProviderConnection;
-use Amacraft\MarketingAutomation\Models\WhatsAppTemplate;
-use Amacraft\MarketingAutomation\Services\ProviderManager;
 
-class SyncWhatsAppTemplates implements NotTenantAware, ShouldQueue
+class SyncWhatsAppTemplates implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -24,7 +23,7 @@ class SyncWhatsAppTemplates implements NotTenantAware, ShouldQueue
     public function __construct(
         public ProviderConnection $provider,
     ) {
-        $this->onQueue('automation');
+        $this->onQueue(config('marketing-automation.queues.automation'));
     }
 
     /**

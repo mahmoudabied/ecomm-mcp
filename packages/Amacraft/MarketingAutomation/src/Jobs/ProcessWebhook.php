@@ -2,19 +2,18 @@
 
 namespace Amacraft\MarketingAutomation\Jobs;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Http\Request;
-use Illuminate\Queue\InteractsWithQueue;
-use Spatie\Multitenancy\Jobs\NotTenantAware;
 use Amacraft\MarketingAutomation\Contracts\ProviderConnection;
 use Amacraft\MarketingAutomation\Contracts\Providers\SupportsInboundOptOut;
 use Amacraft\MarketingAutomation\Repositories\ProviderConnectionRepository;
 use Amacraft\MarketingAutomation\Services\ProviderManager;
 use Amacraft\MarketingAutomation\Services\WebhookProcessor;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Http\Request;
+use Illuminate\Queue\InteractsWithQueue;
 
-class ProcessWebhook implements NotTenantAware, ShouldQueue
+class ProcessWebhook implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
@@ -28,7 +27,7 @@ class ProcessWebhook implements NotTenantAware, ShouldQueue
         protected int $providerConnectionId,
         protected array $captured,
     ) {
-        $this->onQueue('automation');
+        $this->onQueue(config('marketing-automation.queues.automation'));
     }
 
     /**

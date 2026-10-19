@@ -2,6 +2,12 @@
 
 namespace Amacraft\Klaviyo\Http\Controllers\Admin;
 
+use Amacraft\Klaviyo\Jobs\HistoricalSync;
+use Amacraft\Klaviyo\Models\Connection;
+use Amacraft\Klaviyo\Models\SyncJob;
+use Amacraft\Klaviyo\Repositories\ConnectionRepository;
+use Amacraft\Klaviyo\Repositories\OutboxItemRepository;
+use Amacraft\Klaviyo\Services\KlaviyoClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -9,12 +15,6 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Customer\Models\Customer;
-use Amacraft\Klaviyo\Jobs\HistoricalSync;
-use Amacraft\Klaviyo\Models\Connection;
-use Amacraft\Klaviyo\Models\SyncJob;
-use Amacraft\Klaviyo\Repositories\ConnectionRepository;
-use Amacraft\Klaviyo\Repositories\OutboxItemRepository;
-use Amacraft\Klaviyo\Services\KlaviyoClient;
 use Webkul\Sales\Models\Order;
 
 class KlaviyoController extends Controller
@@ -180,7 +180,7 @@ class KlaviyoController extends Controller
         });
 
         foreach ($jobs as $job) {
-            HistoricalSync::dispatch($job->id)->onQueue('klaviyo');
+            HistoricalSync::dispatch($job->id)->onQueue(config('marketing-automation.queues.klaviyo'));
         }
 
         return new JsonResponse([
