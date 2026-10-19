@@ -15,5 +15,6 @@ final readonly class TriggerEvent
         public string $triggerKey,
         public array $payload,
         public ?string $locale = null,
+        public ?int $contactId = null,
     ) {}
 }

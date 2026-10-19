@@ -13,9 +13,9 @@ use Illuminate\Validation\ValidationException;
 class BackInStockController
 {
     /**
-     * The number of subscriptions one phone may request per day.
+     * The number of subscriptions one phone or email may request per day.
      */
-    protected const PHONE_LIMIT_PER_DAY = 3;
+    protected const RECIPIENT_LIMIT_PER_DAY = 3;
 
     /**
      * The number of subscriptions one IP may request per day.
@@ -47,7 +47,7 @@ class BackInStockController
 
         $customerId = auth()->guard('customer')->id();
 
-        $this->throttle($phoneE164);
+        $this->throttle($phoneE164, $data['email'] ?? null);
 
         $channelId = (int) (core()->getCurrentChannel()?->id);
 
@@ -99,21 +99,27 @@ class BackInStockController
     }
 
     /**
-     * Cap subscription requests per phone and per IP per day, so a scripted
-     * visitor cannot pump SMS sends through the restock notification.
+     * Cap subscription requests per IP, then per phone and email, per day. The IP goes first,
+     * so a blocked script never burns a real shopper's own daily attempts.
      */
-    protected function throttle(?string $phoneE164): void
+    protected function throttle(?string $phoneE164, ?string $email): void
     {
-        if ($phoneE164 !== null && ! RateLimiter::attempt('bis-phone:'.$phoneE164, self::PHONE_LIMIT_PER_DAY, fn () => null, 86400)) {
-            throw ValidationException::withMessages([
-                'phone' => trans('marketing_automation::app.shop.back-in-stock.throttled'),
-            ]);
+        $keys = ['bis-ip:'.(string) request()->ip() => self::IP_LIMIT_PER_DAY];
+
+        if ($phoneE164 !== null) {
+            $keys['bis-phone:'.$phoneE164] = self::RECIPIENT_LIMIT_PER_DAY;
         }
 
-        if (! RateLimiter::attempt('bis-ip:'.(string) request()->ip(), self::IP_LIMIT_PER_DAY, fn () => null, 86400)) {
-            throw ValidationException::withMessages([
-                'phone' => trans('marketing_automation::app.shop.back-in-stock.throttled'),
-            ]);
+        if ($email !== null) {
+            $keys['bis-email:'.sha1(strtolower(trim($email)))] = self::RECIPIENT_LIMIT_PER_DAY;
+        }
+
+        foreach ($keys as $key => $limit) {
+            if (! RateLimiter::attempt($key, $limit, fn () => null, 86400)) {
+                throw ValidationException::withMessages([
+                    $phoneE164 !== null ? 'phone' : 'email' => trans('marketing_automation::app.shop.back-in-stock.throttled'),
+                ]);
+            }
         }
     }
 }

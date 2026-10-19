@@ -41,6 +41,7 @@ class IngestTrigger implements ShouldQueue
             'trigger_key' => $event->triggerKey,
             'payload'     => $payload ?: $event->payload,
             'locale'      => $event->locale,
+            'contact_id'  => $event->contactId,
         ]);
     }
 
@@ -70,6 +71,7 @@ class IngestTrigger implements ShouldQueue
             triggerKey: (string) $trigger['trigger_key'],
             payload: (array) $trigger['payload'],
             locale: $trigger['locale'] ?? null,
+            contactId: isset($trigger['contact_id']) ? (int) $trigger['contact_id'] : null,
         ));
     }
 }

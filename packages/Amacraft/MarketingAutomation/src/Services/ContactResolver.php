@@ -129,6 +129,7 @@ class ContactResolver
         $find = fn (array $conditions): ?Contact => Contact::query()
             ->where('channel_id', $channelId)
             ->where($conditions)
+            ->orderBy('id')
             ->first();
 
         if ($customerId !== null) {

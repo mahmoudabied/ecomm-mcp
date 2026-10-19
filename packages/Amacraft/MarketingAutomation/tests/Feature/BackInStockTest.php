@@ -11,6 +11,7 @@ use Amacraft\MarketingAutomation\Models\ProviderConnection;
 use Amacraft\MarketingAutomation\Repositories\FlowRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\RateLimiter;
 use Webkul\Inventory\Models\InventorySource;
 use Webkul\Product\Models\Product;
 use Webkul\Product\Models\ProductInventory;
@@ -78,8 +79,9 @@ function bisSmsDefault(int $channelId): ProviderConnection
     return $connection;
 }
 
-it('ships the back in stock template as transactional', function () {
-    expect(FlowTemplates::find('back_in_stock')['type'])->toBe('transactional');
+it('ships the back in stock template as transactional without a re-entry window', function () {
+    expect(FlowTemplates::find('back_in_stock')['type'])->toBe('transactional')
+        ->and(FlowTemplates::find('back_in_stock')['reentry_window_hours'])->toBe(0);
 });
 
 it('sends a guest phone-only subscriber the restock message', function () {
@@ -157,6 +159,94 @@ it('rotates the trigger key on re-subscribe so re-enrolment is never blocked', f
 
     expect(Enrolment::query()->where('flow_id', $flow->id)->count())->toBe(2)
         ->and($subscription->refresh()->status)->toBe('notified');
+});
+
+it('notifies a shopper about a second product within the same month', function () {
+    $flow = bisFlow();
+
+    $flow->update(['reentry_window_hours' => FlowTemplates::find('back_in_stock')['reentry_window_hours']]);
+
+    Http::fake([
+        'api.twilio.com/*' => Http::response(['sid' => 'SM1'], 201),
+    ]);
+
+    foreach (Product::factory()->count(2)->create(['type' => 'simple']) as $product) {
+        $this->postJson(route('shop.automation.back-in-stock'), [
+            'product_id'      => $product->id,
+            'phone'           => '+966501234569',
+            'consent_channel' => 'sms',
+        ])->assertCreated();
+
+        restock($product);
+    }
+
+    expect(Enrolment::query()->where('flow_id', $flow->id)->count())->toBe(2)
+        ->and(BackInStockSubscription::query()->where('status', 'notified')->count())->toBe(2);
+});
+
+it('never grafts a guest phone onto the contact that owns the email', function () {
+    $channelId = (int) core()->getAllChannels()->first()->id;
+
+    bisFlow();
+
+    $victim = Contact::factory()->create([
+        'channel_id' => $channelId,
+        'email'      => 'victim@example.com',
+        'phone_e164' => null,
+    ]);
+
+    $product = Product::factory()->create(['type' => 'simple']);
+
+    $this->postJson(route('shop.automation.back-in-stock'), [
+        'product_id'      => $product->id,
+        'email'           => 'victim@example.com',
+        'phone'           => '+966501234570',
+        'consent_channel' => 'sms',
+    ])->assertCreated();
+
+    Http::fake([
+        'api.twilio.com/*' => Http::response(['sid' => 'SM1'], 201),
+    ]);
+
+    restock($product);
+
+    expect($victim->refresh()->phone_e164)->toBeNull()
+        ->and(Enrolment::query()->where('contact_id', $victim->id)->count())->toBe(0);
+});
+
+it('checks the IP limit before spending a recipient attempt', function () {
+    $product = Product::factory()->create(['type' => 'simple']);
+
+    foreach (range(1, 10) as $attempt) {
+        RateLimiter::hit('bis-ip:127.0.0.1', 86400);
+    }
+
+    $this->postJson(route('shop.automation.back-in-stock'), [
+        'product_id'      => $product->id,
+        'phone'           => '+966501234571',
+        'consent_channel' => 'sms',
+    ])->assertUnprocessable();
+
+    expect(RateLimiter::attempts('bis-phone:+966501234571'))->toBe(0);
+});
+
+it('throttles subscription requests per email per day', function () {
+    $product = Product::factory()->create(['type' => 'simple']);
+
+    foreach (range(1, 3) as $attempt) {
+        $this->postJson(route('shop.automation.back-in-stock'), [
+            'product_id'      => $product->id,
+            'email'           => 'Same@Example.com',
+            'consent_channel' => 'email',
+        ])->assertCreated();
+    }
+
+    $this->postJson(route('shop.automation.back-in-stock'), [
+        'product_id'      => $product->id,
+        'email'           => 'same@example.com',
+        'consent_channel' => 'email',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
 });
 
 it('rejects an unparsable phone number', function () {

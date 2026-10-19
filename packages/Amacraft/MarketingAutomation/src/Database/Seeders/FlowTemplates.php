@@ -181,7 +181,7 @@ class FlowTemplates
                 'trigger_type'         => 'back_in_stock',
                 'trigger_config'       => [],
                 'type'                 => 'transactional',
-                'reentry_window_hours' => 720,
+                'reentry_window_hours' => 0,
                 'exit_goals'           => [],
                 'draft_definition'     => [
                     'entry' => 's1',

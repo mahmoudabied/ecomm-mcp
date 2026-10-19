@@ -2,10 +2,6 @@
 
 namespace Amacraft\MarketingAutomation\Engine;
 
-use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Str;
 use Amacraft\MarketingAutomation\DTOs\TriggerEvent;
 use Amacraft\MarketingAutomation\Enums\EnrolmentStatus;
 use Amacraft\MarketingAutomation\Enums\FlowStatus;
@@ -16,9 +12,14 @@ use Amacraft\MarketingAutomation\Jobs\ProcessEnrolmentStep;
 use Amacraft\MarketingAutomation\Models\Contact;
 use Amacraft\MarketingAutomation\Models\Enrolment;
 use Amacraft\MarketingAutomation\Models\Flow;
+use Amacraft\MarketingAutomation\Repositories\ContactRepository;
 use Amacraft\MarketingAutomation\Services\ContactResolver;
 use Amacraft\MarketingAutomation\Services\Settings;
 use Amacraft\MarketingAutomation\Services\StatsRecorder;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 
 class EnrolmentService
 {
@@ -27,6 +28,7 @@ class EnrolmentService
      */
     public function __construct(
         protected ContactResolver $contactResolver,
+        protected ContactRepository $contactRepository,
         protected Settings $settings,
         protected StatsRecorder $statsRecorder,
     ) {}
@@ -52,13 +54,7 @@ class EnrolmentService
             return [];
         }
 
-        $contact = $this->contactResolver->resolve(
-            channelId: $event->channelId,
-            customerId: $event->customerId,
-            email: $event->email,
-            phone: $event->phone,
-            locale: $event->locale,
-        );
+        $contact = $this->contactFor($event);
 
         foreach ($flows as $flow) {
             $enrolment = $this->createEnrolment($flow, $contact, $event);
@@ -120,6 +116,28 @@ class EnrolmentService
     }
 
     /**
+     * The contact the event is about; guest data is untrusted, so it never fills in another contact's identity.
+     */
+    protected function contactFor(TriggerEvent $event): Contact
+    {
+        if (
+            $event->contactId !== null
+            && ($contact = $this->contactRepository->find($event->contactId)) !== null
+        ) {
+            return $contact;
+        }
+
+        return $this->contactResolver->resolve(
+            channelId: $event->channelId,
+            customerId: $event->customerId,
+            email: $event->email,
+            phone: $event->phone,
+            locale: $event->locale,
+            trusted: $event->customerId !== null,
+        );
+    }
+
+    /**
      * Native routing only; template_key-less flows always run natively.
      */
     protected function routingDisabled(Flow $flow, string $channelCode): bool
@@ -143,11 +161,12 @@ class EnrolmentService
 
         try {
             $enrolment = DB::transaction(function () use ($flow, $contact, $event, $definition, $token) {
-                $reentryOpen = $flow->enrolments()
-                    ->where('contact_id', $contact->id)
-                    ->where('created_at', '>=', now()->subHours($flow->reentry_window_hours))
-                    ->lockForUpdate()
-                    ->exists();
+                $reentryOpen = $flow->reentry_window_hours > 0
+                    && $flow->enrolments()
+                        ->where('contact_id', $contact->id)
+                        ->where('created_at', '>=', now()->subHours($flow->reentry_window_hours))
+                        ->lockForUpdate()
+                        ->exists();
 
                 if ($reentryOpen) {
                     return null;

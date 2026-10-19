@@ -72,6 +72,7 @@ class ProcessBackInStockSubscriptions implements ShouldQueue
             triggerKey: $subscription->trigger_key ?? "bis:{$subscription->id}",
             payload: ['product_id' => $subscription->product_id],
             locale: $contact->locale,
+            contactId: $contact->id,
         ));
 
         if ($enrolments !== []) {
