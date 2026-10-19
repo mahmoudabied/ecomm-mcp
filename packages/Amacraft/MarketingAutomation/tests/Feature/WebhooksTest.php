@@ -23,6 +23,7 @@ use Amacraft\MarketingAutomation\Services\Providers\VonageSmsProvider;
 use Amacraft\MarketingAutomation\Services\WebhookProcessor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Route;
 use Webkul\Core\Models\Channel;
 
 function webhookUrl(ProviderConnection $connection, string $action = 'receive'): string
@@ -389,3 +390,16 @@ it('does not disable stored templates when the provider sync fails', function ()
 
     expect($template->refresh()->status)->toBe(WhatsAppTemplateStatus::Approved->value);
 });
+
+it('exempts token-signed public routes from every CSRF middleware generation', function (string $routeName) {
+    $excluded = Route::getRoutes()->getByName($routeName)->excludedMiddleware();
+
+    expect($excluded)->toContain(
+        'Illuminate\Foundation\Http\Middleware\PreventRequestForgery',
+        'Illuminate\Foundation\Http\Middleware\ValidateCsrfToken',
+        'Illuminate\Foundation\Http\Middleware\VerifyCsrfToken',
+    );
+})->with([
+    'automation.webhooks.receive',
+    'shop.automation.unsubscribe.confirm',
+]);

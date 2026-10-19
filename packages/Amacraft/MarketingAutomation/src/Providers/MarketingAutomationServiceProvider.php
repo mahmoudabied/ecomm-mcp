@@ -9,12 +9,12 @@ use Amacraft\MarketingAutomation\Console\Commands\DispatchDueCommand;
 use Amacraft\MarketingAutomation\Console\Commands\InstallCommand;
 use Amacraft\MarketingAutomation\Console\Commands\PurgeLogsCommand;
 use Amacraft\MarketingAutomation\Console\Commands\UninstallCommand;
+use Amacraft\MarketingAutomation\Http\CsrfExemption;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\ContactResolver;
 use Amacraft\MarketingAutomation\Services\PhoneNormalizer;
 use Amacraft\MarketingAutomation\Services\ProviderManager;
 use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Konekt\Concord\ConcordServiceProvider;
@@ -97,7 +97,7 @@ class MarketingAutomationServiceProvider extends ServiceProvider
             ->group(__DIR__.'/../Routes/shop-routes.php');
 
         Route::middleware(['web'])
-            ->withoutMiddleware(VerifyCsrfToken::class)
+            ->withoutMiddleware(CsrfExemption::MIDDLEWARE)
             ->group(__DIR__.'/../Routes/public-routes.php');
 
         $this->app->register(EventServiceProvider::class);

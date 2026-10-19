@@ -6,7 +6,7 @@ use Amacraft\MarketingAutomation\Http\Controllers\Shop\CheckoutContactController
 use Amacraft\MarketingAutomation\Http\Controllers\Shop\ConsentConfirmationController;
 use Amacraft\MarketingAutomation\Http\Controllers\Shop\MarketingPreferencesController;
 use Amacraft\MarketingAutomation\Http\Controllers\Shop\UnsubscribeController;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Amacraft\MarketingAutomation\Http\CsrfExemption;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -54,7 +54,7 @@ Route::controller(UnsubscribeController::class)
 
         Route::post('{token}', 'confirm')
             ->name('shop.automation.unsubscribe.confirm')
-            ->withoutMiddleware(VerifyCsrfToken::class);
+            ->withoutMiddleware(CsrfExemption::MIDDLEWARE);
     });
 
 /**
