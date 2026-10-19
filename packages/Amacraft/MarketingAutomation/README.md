@@ -1,6 +1,6 @@
 # Marketing Automation for Bagisto
 
-Flows, abandoned-cart recovery and consent-safe messaging for **Bagisto 2.3.x** — email, SMS and WhatsApp journeys driven by storefront events, with a visual flow builder, reporting and GDPR tooling in the admin.
+Flows, abandoned-cart recovery and consent-safe messaging for **Bagisto 2.3, 2.4 and 2.5** — email, SMS and WhatsApp journeys driven by storefront events, with a visual flow builder, reporting and GDPR tooling in the admin.
 
 Works out of the box on a stock Bagisto store: `composer require` plus one install command. No host-file edits, no build step.
 
@@ -19,8 +19,8 @@ Works out of the box on a stock Bagisto store: `composer require` plus one insta
 
 | | |
 |---|---|
-| Bagisto | 2.3.x |
-| PHP | 8.2 – 8.4 |
+| Bagisto | 2.3.x, 2.4.x, 2.5.x (Laravel 11, 12, 13) |
+| PHP | 8.2 – 8.4 (Bagisto 2.5 itself requires 8.4) |
 | Database | MySQL 8 |
 | Queue | `database` or `redis` (messages are queued) |
 | Languages shipped | English, Arabic (fallback: English) |
@@ -99,6 +99,10 @@ WhatsApp sending always uses an approved template; sync templates on the connect
 `Settings → Marketing Automation → Consent` exposes **Require double opt-in for guests** (on by default). Guest consent requests (checkout capture, signup checkboxes) then stay *pending* until the signed confirmation link is followed — by mail, or for SMS/WhatsApp through the provider. WhatsApp confirmations need an approved utility template with one body variable; set its name with `MA_WHATSAPP_CONFIRM_TEMPLATE` (default `consent_confirm`). Logged-in customers grant directly. A guest request never downgrades a consent that is already granted.
 
 Confirmations are sent from the queue, never during checkout, and are capped at 3 per email address or phone per day and at `MA_CONFIRM_DAILY_LIMIT` (default 500) per channel per store per day, so scripted sign-ups cannot run up your SMS bill.
+
+## Full page cache
+
+Bagisto's full page cache serves storefront pages to guests from a cache. The package's forms use Bagisto's CSRF token replacement, so cached pages stay valid. The back-in-stock form follows the product page cache: it appears once Bagisto refreshes the cached page of a product that went out of stock.
 
 ## Optional Klaviyo connector
 

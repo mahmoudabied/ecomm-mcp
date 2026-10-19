@@ -2,7 +2,7 @@
 
 ## 1.0.0 — 2026-10-19
 
-First stable release.
+First stable release. Supports Bagisto 2.3, 2.4 and 2.5 (Laravel 11, 12 and 13).
 
 - Klaviyo routing per channel and flow template, with native fallback when no active connection exists.
 - Historical sync of customers, orders and catalog through the outbox, scoped to the connection channel.

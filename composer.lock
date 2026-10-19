@@ -12,11 +12,11 @@
             "dist": {
                 "type": "path",
                 "url": "packages/Amacraft/Klaviyo",
-                "reference": "56b3b841996ef10d4cb74d110cd59db8e3a1103c"
+                "reference": "2a36d12b6d157f1fa9b450a0170aa6cf00983e1d"
             },
             "require": {
                 "amacraft/bagisto-marketing-automation": "^1.0",
-                "illuminate/support": "^11.0",
+                "illuminate/support": "^11.0 || ^12.0 || ^13.0",
                 "php": "^8.2"
             },
             "type": "library",
@@ -63,11 +63,11 @@
             "dist": {
                 "type": "path",
                 "url": "packages/Amacraft/MarketingAutomation",
-                "reference": "08dbcf666ffdb353cb49a0ae408bde4cc9fd309a"
+                "reference": "5be3c32630642b25e77fd6e4a1f0b508f636bb90"
             },
             "require": {
                 "giggsey/libphonenumber-for-php-lite": "^9.0",
-                "illuminate/support": "^11.0",
+                "illuminate/support": "^11.0 || ^12.0 || ^13.0",
                 "php": "^8.2"
             },
             "type": "library",

@@ -1,6 +1,6 @@
 # Klaviyo Connector for Bagisto Marketing Automation
 
-Optional connector between [amacraft/bagisto-marketing-automation](../MarketingAutomation/README.md) and **Klaviyo** for **Bagisto 2.3.x**: route selected flow templates to Klaviyo instead of the native sender, mirror consent, sync history and pull unsubscribes back.
+Optional connector between [amacraft/bagisto-marketing-automation](../MarketingAutomation/README.md) and **Klaviyo** for **Bagisto 2.3, 2.4 and 2.5**: route selected flow templates to Klaviyo instead of the native sender, mirror consent, sync history and pull unsubscribes back.
 
 ## Features
 
@@ -14,8 +14,8 @@ Optional connector between [amacraft/bagisto-marketing-automation](../MarketingA
 | | |
 |---|---|
 | amacraft/bagisto-marketing-automation | ^1.0 (installed automatically) |
-| Bagisto | 2.3.x |
-| PHP | 8.2 – 8.4 |
+| Bagisto | 2.3.x, 2.4.x, 2.5.x (Laravel 11, 12, 13) |
+| PHP | 8.2 – 8.4 (Bagisto 2.5 itself requires 8.4) |
 | Klaviyo | private API key with **Read/Write** access |
 
 ## Installation
