@@ -2,9 +2,6 @@
 
 namespace Amacraft\MarketingAutomation\Services;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Event;
-use Webkul\Core\Models\SubscribersList;
 use Amacraft\MarketingAutomation\Enums\ConsentSource;
 use Amacraft\MarketingAutomation\Enums\ConsentStatus;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
@@ -12,6 +9,9 @@ use Amacraft\MarketingAutomation\Models\Consent;
 use Amacraft\MarketingAutomation\Models\ConsentEvent;
 use Amacraft\MarketingAutomation\Models\Contact;
 use Amacraft\MarketingAutomation\Repositories\ConsentRepository;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
+use Webkul\Core\Models\SubscribersList;
 
 class ConsentService
 {
@@ -20,14 +20,46 @@ class ConsentService
      */
     public function __construct(
         protected ConsentRepository $consentRepository,
+        protected Settings $settings,
     ) {}
 
     /**
      * Grant consent for the given message channel and record the event.
+     *
+     * Requests that are not authenticated only start a pending consent when
+     * double opt-in is on; the ConfirmationService turns it into a grant once
+     * the shopper follows the signed link.
      */
-    public function grant(Contact $contact, MessageChannel $channel, ConsentSource $source, ?Request $request = null): Consent
-    {
+    public function grant(
+        Contact $contact,
+        MessageChannel $channel,
+        ConsentSource $source,
+        ?Request $request = null,
+        bool $trusted = true,
+    ): Consent {
+        if (! $trusted && $this->settings->doubleOptIn()) {
+            return $this->record($contact, $channel, ConsentStatus::Pending, $source, $request);
+        }
+
         return $this->record($contact, $channel, ConsentStatus::Granted, $source, $request);
+    }
+
+    /**
+     * Turn a pending consent into a grant after the signed link was followed.
+     * Consents in any other state are left untouched.
+     */
+    public function confirmPending(Contact $contact, MessageChannel $channel): ?Consent
+    {
+        $consent = Consent::query()
+            ->where('contact_id', $contact->id)
+            ->where('channel', $channel->value)
+            ->first();
+
+        if ($consent?->status !== ConsentStatus::Pending) {
+            return $consent;
+        }
+
+        return $this->record($contact, $channel, ConsentStatus::Granted, ConsentSource::DoubleOptIn, null);
     }
 
     /**

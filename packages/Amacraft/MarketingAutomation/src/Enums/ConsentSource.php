@@ -23,4 +23,6 @@ enum ConsentSource: string
     case MigratedNewsletter = 'migrated_newsletter';
 
     case Newsletter = 'newsletter';
+
+    case DoubleOptIn = 'double_opt_in';
 }

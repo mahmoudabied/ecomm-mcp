@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Mail;
-use Webkul\Customer\Models\Customer;
 use Amacraft\MarketingAutomation\Enums\ConsentSource;
 use Amacraft\MarketingAutomation\Enums\ConsentStatus;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
@@ -9,6 +7,9 @@ use Amacraft\MarketingAutomation\Models\ConsentEvent;
 use Amacraft\MarketingAutomation\Models\Contact;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\ContactResolver;
+use Illuminate\Support\Facades\Mail;
+use Webkul\Core\Models\CoreConfig;
+use Webkul\Customer\Models\Customer;
 
 function optContactFor(Customer $customer): Contact
 {
@@ -17,6 +18,11 @@ function optContactFor(Customer $customer): Contact
 
 it('grants the ticked channel at registration with the registration source', function () {
     Mail::fake();
+
+    CoreConfig::query()->updateOrCreate(
+        ['code' => 'marketing_automation.consent.settings.double_opt_in'],
+        ['value' => '0'],
+    );
 
     $this->post(route('shop.customers.register.store'), [
         'first_name'            => 'Sara',
@@ -89,6 +95,11 @@ it('revokes a channel from the account preferences page', function () {
 });
 
 it('grants the checkout capture consents with the checkout source', function () {
+    CoreConfig::query()->updateOrCreate(
+        ['code' => 'marketing_automation.consent.settings.double_opt_in'],
+        ['value' => '0'],
+    );
+
     $this->post(route('shop.automation.checkout-contact'), [
         'email'    => 'checkout-optin@example.com',
         'consents' => ['email' => true, 'sms' => true],

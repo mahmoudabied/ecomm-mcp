@@ -30,6 +30,20 @@ return [
             ],
         ],
     ], [
+        'key'    => 'marketing_automation.consent.settings',
+        'name'   => 'marketing_automation::app.configuration.consent.settings.title',
+        'info'   => 'marketing_automation::app.configuration.consent.settings.info',
+        'icon'   => 'settings/store.svg',
+        'sort'   => 8,
+        'fields' => [
+            [
+                'name'     => 'double_opt_in',
+                'title'    => 'marketing_automation::app.configuration.consent.settings.double-opt-in',
+                'type'     => 'boolean',
+                'default'  => 1,
+            ],
+        ],
+    ], [
         'key'  => 'marketing_automation.email',
         'name' => 'marketing_automation::app.configuration.email.title',
         'info' => 'marketing_automation::app.configuration.email.info',

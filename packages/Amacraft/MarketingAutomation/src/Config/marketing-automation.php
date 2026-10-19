@@ -11,4 +11,13 @@ return [
 
         'klaviyo' => env('KLAVIYO_QUEUE', 'klaviyo'),
     ],
+
+    /**
+     * The WhatsApp utility template used for double opt-in confirmations.
+     * WhatsApp rejects free text outside a conversation, so an approved
+     * template with one body variable (the confirmation link) is required.
+     */
+    'confirmation' => [
+        'whatsapp_template' => env('MA_WHATSAPP_CONFIRM_TEMPLATE', 'consent_confirm'),
+    ],
 ];

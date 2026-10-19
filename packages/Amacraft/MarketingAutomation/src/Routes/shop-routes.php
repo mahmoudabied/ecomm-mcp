@@ -1,12 +1,13 @@
 <?php
 
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
-use Illuminate\Support\Facades\Route;
 use Amacraft\MarketingAutomation\Http\Controllers\Shop\BackInStockController;
 use Amacraft\MarketingAutomation\Http\Controllers\Shop\CartRestoreController;
 use Amacraft\MarketingAutomation\Http\Controllers\Shop\CheckoutContactController;
+use Amacraft\MarketingAutomation\Http\Controllers\Shop\ConsentConfirmationController;
 use Amacraft\MarketingAutomation\Http\Controllers\Shop\MarketingPreferencesController;
 use Amacraft\MarketingAutomation\Http\Controllers\Shop\UnsubscribeController;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Support\Facades\Route;
 
 /**
  * Back-in-stock subscription routes.
@@ -54,4 +55,17 @@ Route::controller(UnsubscribeController::class)
         Route::post('{token}', 'confirm')
             ->name('shop.automation.unsubscribe.confirm')
             ->withoutMiddleware(VerifyCsrfToken::class);
+    });
+
+/**
+ * Double opt-in confirmation routes; the signed token is the proof the
+ * requester owns the address, so it replaces a session.
+ */
+Route::controller(ConsentConfirmationController::class)
+    ->prefix('automation/consent/confirm')
+    ->middleware('throttle:30,1')
+    ->group(function () {
+        Route::get('{token}', 'show')->name('shop.automation.consent.confirm');
+
+        Route::post('{token}', 'confirm')->name('shop.automation.consent.confirm.submit');
     });

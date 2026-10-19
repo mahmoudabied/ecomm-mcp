@@ -30,6 +30,14 @@ return [
             ],
         ],
 
+        'consent' => [
+            'settings' => [
+                'title'          => 'Consent',
+                'info'           => 'How marketing consent is collected.',
+                'double-opt-in'  => 'Require double opt-in for guests (a confirmation link is sent before consent counts)',
+            ],
+        ],
+
         'email' => [
             'title'  => 'Email',
             'info'   => 'Sender identity for automation emails.',
@@ -493,6 +501,26 @@ return [
         'mail-hint'        => 'Set real SMTP credentials in .env; log/array drivers do not deliver to customers.',
         'ok'               => 'OK',
         'warning'          => 'Attention',
+    ],
+
+    'consent' => [
+        'channels' => [
+            'email'    => 'email',
+            'sms'      => 'SMS',
+            'whatsapp' => 'WhatsApp',
+        ],
+
+        'confirmation' => [
+            'title'        => 'Confirm your subscription',
+            'greeting'     => 'Hello!',
+            'intro'        => 'Please confirm that you want to receive marketing :channel messages from us. The link is valid for three days.',
+            'button'       => 'Confirm subscription',
+            'ignore'       => 'If you did not request this, you can ignore this message — nothing will be sent to you.',
+            'confirm-text' => 'Confirm that you want to receive marketing :channel messages from us?',
+            'done'         => 'Thank you! Your :channel subscription is now confirmed.',
+            'sms'          => 'Confirm your :channel subscription: :link',
+            'subject'      => 'Confirm your subscription',
+        ],
     ],
 
     'commands' => [

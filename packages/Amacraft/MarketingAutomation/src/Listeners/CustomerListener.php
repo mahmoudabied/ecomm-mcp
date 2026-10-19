@@ -2,16 +2,19 @@
 
 namespace Amacraft\MarketingAutomation\Listeners;
 
-use Webkul\Customer\Contracts\Customer;
 use Amacraft\MarketingAutomation\DTOs\TriggerEvent;
 use Amacraft\MarketingAutomation\Enums\ConsentSource;
+use Amacraft\MarketingAutomation\Enums\ConsentStatus;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
 use Amacraft\MarketingAutomation\Enums\TriggerType;
 use Amacraft\MarketingAutomation\Jobs\IngestTrigger;
 use Amacraft\MarketingAutomation\Repositories\ContactRepository;
+use Amacraft\MarketingAutomation\Services\ConsentConfirmation;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\ContactCookie;
 use Amacraft\MarketingAutomation\Services\ContactResolver;
+use Webkul\Core\Models\Channel;
+use Webkul\Customer\Contracts\Customer;
 
 class CustomerListener
 {
@@ -23,6 +26,7 @@ class CustomerListener
         protected ContactResolver $contactResolver,
         protected ContactCookie $contactCookie,
         protected ConsentService $consentService,
+        protected ConsentConfirmation $confirmation,
     ) {}
 
     /**
@@ -77,7 +81,9 @@ class CustomerListener
     }
 
     /**
-     * Persist the opt-in checkboxes of the signup form (US4).
+     * Persist the opt-in checkboxes of the signup form (US4). The signup
+     * request itself is not a session, so with double opt-in on the grants
+     * stay pending until the confirmation link is followed.
      */
     protected function grantRequestedConsents(Customer $customer, int $channelId): void
     {
@@ -92,9 +98,17 @@ class CustomerListener
 
         $contact = $this->contactResolver->forCustomer($customer, $channelId);
 
+        $salesChannel = Channel::query()->find($channelId) ?? core()->getDefaultChannel();
+
         foreach (MessageChannel::cases() as $channel) {
-            if (filter_var($consents[$channel->value] ?? null, FILTER_VALIDATE_BOOLEAN)) {
-                $this->consentService->grant($contact, $channel, ConsentSource::Registration, request());
+            if (! filter_var($consents[$channel->value] ?? null, FILTER_VALIDATE_BOOLEAN)) {
+                continue;
+            }
+
+            $consent = $this->consentService->grant($contact, $channel, ConsentSource::Registration, request(), false);
+
+            if ($consent->status === ConsentStatus::Pending) {
+                $this->confirmation->send($contact, $channel, $salesChannel);
             }
         }
     }

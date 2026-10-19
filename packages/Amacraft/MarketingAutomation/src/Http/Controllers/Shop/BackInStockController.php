@@ -2,9 +2,9 @@
 
 namespace Amacraft\MarketingAutomation\Http\Controllers\Shop;
 
-use Illuminate\Http\JsonResponse;
 use Amacraft\MarketingAutomation\Models\BackInStockSubscription;
 use Amacraft\MarketingAutomation\Services\ContactResolver;
+use Illuminate\Http\JsonResponse;
 
 class BackInStockController
 {
@@ -30,11 +30,14 @@ class BackInStockController
 
         $channelId = (int) (core()->getCurrentChannel()?->id);
 
+        $customerId = auth()->guard('customer')->id();
+
         $contact = $this->contactResolver->resolve(
             channelId: $channelId,
-            customerId: auth()->guard('customer')->id(),
+            customerId: $customerId,
             email: $data['email'] ?? null,
             phone: $data['phone'] ?? null,
+            trusted: $customerId !== null,
         );
 
         $subscription = BackInStockSubscription::query()->updateOrCreate(

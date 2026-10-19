@@ -2,10 +2,10 @@
 
 namespace Amacraft\MarketingAutomation\Services;
 
-use Illuminate\Support\Facades\DB;
-use Webkul\Core\Models\Channel;
 use Amacraft\Klaviyo\Models\Connection;
 use Amacraft\MarketingAutomation\Enums\RoutingTarget;
+use Illuminate\Support\Facades\DB;
+use Webkul\Core\Models\Channel;
 
 class Settings
 {
@@ -69,6 +69,15 @@ class Settings
     public function retentionMonths(): int
     {
         return (int) core()->getConfigData('marketing_automation.retention.settings.log_months') ?: 12;
+    }
+
+    /**
+     * Whether consents requested without an authenticated session must be
+     * confirmed before they count.
+     */
+    public function doubleOptIn(): bool
+    {
+        return (bool) $this->config('consent.settings.double_opt_in', core()->getCurrentChannel()?->code ?? '', true);
     }
 
     /**

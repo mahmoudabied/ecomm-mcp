@@ -1,5 +1,11 @@
 <?php
 
+use Amacraft\MarketingAutomation\Enums\AbandonedCartStatus;
+use Amacraft\MarketingAutomation\Models\AbandonedCart;
+use Amacraft\MarketingAutomation\Models\Contact;
+use Amacraft\MarketingAutomation\Models\Enrolment;
+use Amacraft\MarketingAutomation\Models\Flow;
+use Amacraft\MarketingAutomation\Repositories\FlowRepository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Blade;
@@ -10,12 +16,6 @@ use Webkul\Checkout\Models\Cart;
 use Webkul\Checkout\Models\CartAddress;
 use Webkul\Checkout\Models\CartItem;
 use Webkul\Customer\Models\Customer;
-use Amacraft\MarketingAutomation\Enums\AbandonedCartStatus;
-use Amacraft\MarketingAutomation\Models\AbandonedCart;
-use Amacraft\MarketingAutomation\Models\Contact;
-use Amacraft\MarketingAutomation\Models\Enrolment;
-use Amacraft\MarketingAutomation\Models\Flow;
-use Amacraft\MarketingAutomation\Repositories\FlowRepository;
 use Webkul\Product\Models\Product;
 
 beforeEach(function () {
@@ -291,7 +291,7 @@ it('captures a guest contact at checkout and returns the visitor cookie', functi
     $contact = Contact::query()->where('email', 'shopper@example.com')->first();
 
     expect($contact)->not->toBeNull()
-        ->and($contact->consents()->where('channel', 'email')->where('status', 'granted')->exists())->toBeTrue();
+        ->and($contact->consents()->where('channel', 'email')->where('status', 'pending')->exists())->toBeTrue();
 
     expect(Cart::query()->find($cart->id)->customer_email)->toBe('shopper@example.com');
 });
@@ -428,11 +428,14 @@ it('captures the email and phone of a guest as one contact', function () {
         'consents' => ['sms' => true],
     ])->assertNoContent();
 
-    $contact = Contact::query()->where('email', 'both@example.com')->sole();
+    $matched = Contact::query()->where('email', 'both@example.com')->whereNull('phone_e164')->sole();
 
-    expect(Contact::query()->count())->toBe(1)
-        ->and($contact->phone_e164)->toBe('+966501234567')
-        ->and($contact->consents()->where('channel', 'sms')->where('status', 'granted')->exists())->toBeTrue();
+    $isolated = Contact::query()->where('phone_e164', '+966501234567')->sole();
+
+    expect(Contact::query()->count())->toBe(2)
+        ->and($isolated->id)->not->toBe($matched->id)
+        ->and($matched->consents()->count())->toBe(0)
+        ->and($isolated->consents()->where('channel', 'sms')->where('status', 'pending')->exists())->toBeTrue();
 });
 
 it('wires the checkout contact capture to the dot-named address inputs', function () {

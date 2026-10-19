@@ -2,8 +2,6 @@
 
 namespace Amacraft\MarketingAutomation\Services;
 
-use Illuminate\Support\Facades\DB;
-use Webkul\Customer\Models\Customer;
 use Amacraft\MarketingAutomation\Models\AbandonedCart;
 use Amacraft\MarketingAutomation\Models\BackInStockSubscription;
 use Amacraft\MarketingAutomation\Models\Consent;
@@ -11,6 +9,8 @@ use Amacraft\MarketingAutomation\Models\ConsentEvent;
 use Amacraft\MarketingAutomation\Models\Contact;
 use Amacraft\MarketingAutomation\Models\Enrolment;
 use Amacraft\MarketingAutomation\Repositories\ContactRepository;
+use Illuminate\Support\Facades\DB;
+use Webkul\Customer\Models\Customer;
 
 class ContactResolver
 {
@@ -25,6 +25,11 @@ class ContactResolver
     /**
      * Find or create the contact for the given identity hints within a channel.
      *
+     * Untrusted callers (guest requests) never modify an existing contact:
+     * when the request identity is not already on the matched contact, they
+     * get a fresh, unlinked contact instead, so nobody can graft a phone or a
+     * customer onto somebody else's profile.
+     *
      * @param  array{first?: ?string, last?: ?string}  $names
      */
     public function resolve(
@@ -35,6 +40,7 @@ class ContactResolver
         ?string $country = null,
         ?string $locale = null,
         array $names = [],
+        bool $trusted = true,
     ): Contact {
         $email = $email !== null ? strtolower(trim($email)) : null;
         $phoneE164 = $this->phoneNormalizer->normalize($phone, $country);
@@ -68,6 +74,12 @@ class ContactResolver
 
         if ($contact === null) {
             return $this->contactRepository->create($attributes);
+        }
+
+        if (! $trusted) {
+            return $this->holdsIdentity($contact, $email, $phoneE164)
+                ? $contact
+                : $this->contactRepository->create($attributes);
         }
 
         return $this->fillMissingAttributes($contact, $attributes);
@@ -140,6 +152,23 @@ class ContactResolver
         }
 
         return null;
+    }
+
+    /**
+     * Whether the contact already carries exactly the identity the request
+     * supplied; a missing or different value means the request may not touch it.
+     */
+    protected function holdsIdentity(Contact $contact, ?string $email, ?string $phoneE164): bool
+    {
+        if ($email !== null && $contact->email !== $email) {
+            return false;
+        }
+
+        if ($phoneE164 !== null && $contact->phone_e164 !== $phoneE164) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
