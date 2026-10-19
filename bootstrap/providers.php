@@ -1,5 +1,7 @@
 <?php
 
+use Amacraft\Klaviyo\Providers\KlaviyoServiceProvider;
+use Amacraft\MarketingAutomation\Providers\MarketingAutomationServiceProvider;
 use App\Providers\AppServiceProvider;
 use Webkul\Admin\Providers\AdminServiceProvider;
 use Webkul\AmacommerceTheme\Providers\AmacommerceThemeServiceProvider;
@@ -20,10 +22,8 @@ use Webkul\FPC\Providers\FPCServiceProvider;
 use Webkul\GDPR\Providers\GDPRServiceProvider;
 use Webkul\Installer\Providers\InstallerServiceProvider;
 use Webkul\Inventory\Providers\InventoryServiceProvider;
-use Webkul\Klaviyo\Providers\KlaviyoServiceProvider;
 use Webkul\MagicAI\Providers\MagicAIServiceProvider;
 use Webkul\Marketing\Providers\MarketingServiceProvider;
-use Webkul\MarketingAutomation\Providers\MarketingAutomationServiceProvider;
 use Webkul\McpServer\Providers\McpServiceProvider;
 use Webkul\Notification\Providers\NotificationServiceProvider;
 use Webkul\Payment\Providers\PaymentServiceProvider;

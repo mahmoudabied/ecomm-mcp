@@ -33,16 +33,16 @@
 
         <!-- MarketingAutomation package testsuites. -->
         <testsuite name="MarketingAutomation Feature Test">
-            <directory suffix="Test.php">packages/Webkul/MarketingAutomation/tests/Feature</directory>
+            <directory suffix="Test.php">packages/Amacraft/MarketingAutomation/tests/Feature</directory>
         </testsuite>
 
         <testsuite name="MarketingAutomation Unit Test">
-            <directory suffix="Test.php">packages/Webkul/MarketingAutomation/tests/Unit</directory>
+            <directory suffix="Test.php">packages/Amacraft/MarketingAutomation/tests/Unit</directory>
         </testsuite>
 
         <!-- Klaviyo package testsuites. -->
         <testsuite name="Klaviyo Feature Test">
-            <directory suffix="Test.php">packages/Webkul/Klaviyo/tests/Feature</directory>
+            <directory suffix="Test.php">packages/Amacraft/Klaviyo/tests/Feature</directory>
         </testsuite>
     </testsuites>
 

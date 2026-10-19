@@ -1,0 +1,99 @@
+<?php
+
+namespace Amacraft\MarketingAutomation\Engine;
+
+use Illuminate\Support\Facades\Event;
+use Amacraft\MarketingAutomation\Contracts\Enrolment;
+use Amacraft\MarketingAutomation\Contracts\Flow;
+use Amacraft\MarketingAutomation\Enums\EnrolmentStatus;
+use Amacraft\MarketingAutomation\Enums\JourneyEvent;
+use Amacraft\MarketingAutomation\Repositories\ContactRepository;
+use Amacraft\MarketingAutomation\Repositories\EnrolmentEventRepository;
+use Amacraft\MarketingAutomation\Repositories\EnrolmentRepository;
+use Amacraft\MarketingAutomation\Services\PhoneNormalizer;
+use Amacraft\MarketingAutomation\Services\StatsRecorder;
+use Webkul\Sales\Contracts\Order;
+
+class ExitGoalService
+{
+    /**
+     * Create a new exit goal service instance.
+     */
+    public function __construct(
+        protected ContactRepository $contactRepository,
+        protected EnrolmentRepository $enrolmentRepository,
+        protected EnrolmentEventRepository $enrolmentEventRepository,
+        protected PhoneNormalizer $phoneNormalizer,
+        protected StatsRecorder $statsRecorder,
+    ) {}
+
+    /**
+     * Convert the active enrolments of the order's contacts whose flow exits on an order.
+     */
+    public function orderPlaced(Order $order): void
+    {
+        $contactIds = $this->contactIdsFor($order);
+
+        if ($contactIds === []) {
+            return;
+        }
+
+        $this->enrolmentRepository
+            ->activeForContactsSince($contactIds, $order->created_at)
+            ->filter(fn (Enrolment $enrolment) => $this->hasOrderPlacedGoal($enrolment->flow))
+            ->each(fn (Enrolment $enrolment) => $this->convert($enrolment));
+    }
+
+    /**
+     * Mark the enrolment converted and record why it left the flow.
+     */
+    protected function convert(Enrolment $enrolment): void
+    {
+        $enrolment = $this->enrolmentRepository->update([
+            'status'       => EnrolmentStatus::Converted->value,
+            'completed_at' => now(),
+            'next_run_at'  => null,
+        ], $enrolment->id);
+
+        $this->enrolmentEventRepository->create([
+            'enrolment_id' => $enrolment->id,
+            'event'        => JourneyEvent::Exited->value,
+            'reason'       => 'goal_met',
+        ]);
+
+        $this->statsRecorder->increment(
+            (int) $enrolment->flow_id,
+            (string) $enrolment->current_step_key,
+            (int) $enrolment->channel_id,
+            'converted',
+        );
+
+        Event::dispatch('marketing_automation.enrolment.finish.after', [$enrolment]);
+    }
+
+    /**
+     * The order's contacts: the customer, an unmerged guest of the email, or a phone-only guest.
+     *
+     * @return array<int, int>
+     */
+    protected function contactIdsFor(Order $order): array
+    {
+        $billing = $order->billing_address;
+
+        return $this->contactRepository->idsMatching(
+            (int) $order->channel_id,
+            $order->customer_id ? (int) $order->customer_id : null,
+            filled($order->customer_email) ? (string) $order->customer_email : null,
+            $this->phoneNormalizer->normalize($billing?->phone, $billing?->country),
+        );
+    }
+
+    /**
+     * Whether the flow exits when an order is placed.
+     */
+    protected function hasOrderPlacedGoal(?Flow $flow): bool
+    {
+        return collect((array) ($flow?->exit_goals ?? []))
+            ->contains(fn ($goal) => ($goal['type'] ?? null) === 'order_placed');
+    }
+}

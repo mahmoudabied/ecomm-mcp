@@ -1,0 +1,19 @@
+<?php
+
+namespace Amacraft\MarketingAutomation\Services;
+
+use Amacraft\MarketingAutomation\Enums\MessageEventType;
+use Amacraft\MarketingAutomation\Jobs\RecordMessageEvent;
+
+class MessageEvents
+{
+    /**
+     * Queue the recording of one delivery or engagement event on a message.
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    public function record(string $messageUuid, MessageEventType $type, array $meta = []): void
+    {
+        RecordMessageEvent::dispatch($messageUuid, $type, $meta);
+    }
+}
