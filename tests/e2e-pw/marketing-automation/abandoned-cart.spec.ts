@@ -2,19 +2,21 @@
  * Abandoned cart recovery — end-to-end smoke test (spec US1 Independent Test).
  *
  * This suite drives a real browser against a running Bagisto instance.
- * The scheduler-driven steps (detect + dispatch) run through artisan, which a
- * Playwright spec cannot invoke; the spec therefore pauses and documents the
- * two commands an operator runs between the browser steps (see runAutomation()
- * below, or execute them manually while the test is paused).
+ * Start the store with the log mailer first:
  *
- * Prerequisites (see specs/002-marketing-automation/quickstart.md):
- * - A local install with MAIL_MAILER=log and a real queue driver.
- * - npm --prefix packages/Webkul/AmacommerceTheme run build
- * - php artisan automation:install
+ *   MAIL_MAILER=log php artisan serve --port=8099
  *
- * Manual step between the two browser phases (the suite cannot run artisan):
+ * Between the two tests an operator runs the scheduler steps (a Playwright
+ * spec cannot invoke artisan), which detect the idle cart and send the
+ * recovery email into storage/logs/laravel.log:
+ *
  *   php artisan automation:detect-abandoned-carts
  *   php artisan automation:dispatch-due --now
+ *
+ * Run each phase separately:
+ *   npx playwright test --config tests/e2e-pw/playwright.config.ts --grep-invert "restore link"
+ *   ... operator commands ...
+ *   npx playwright test --config tests/e2e-pw/playwright.config.ts --grep "restore link"
  */
 
 import { test, expect } from '@playwright/test';
@@ -32,55 +34,59 @@ async function loginAsAdmin(page) {
   await page.getByRole('textbox', { name: /password/i }).fill(adminPassword);
   await page.getByRole('button', { name: /sign in|login/i }).click();
 
-  await expect(page).not.toHaveURL(new RegExp(adminUrl));
+  await expect(page).toHaveURL(/admin\/dashboard/);
 }
 
-test('admin creates the abandoned cart flow and a guest gets the recovery email', async ({ page }) => {
-  // Phase 1 — create and activate the flow from the template.
+test('admin creates the abandoned cart flow and a guest abandons a cart', async ({ page }) => {
   await loginAsAdmin(page);
 
   await page.goto(`${adminUrl}/marketing/automation/flows`);
 
-  await page.getByRole('button', { name: /create flow/i }).click();
+  await page.locator('.primary-button', { hasText: /create flow/i }).first().click();
 
-  await page.getByLabel(/name/i).fill('E2E Abandoned Cart');
+  const nameInput = page.locator('input[v-model="form.name"]');
 
-  const templateSelect = page.getByLabel(/template|start from/i);
-  if (await templateSelect.count()) {
-    await templateSelect.selectOption({ label: /abandoned cart/i });
-  }
+  await expect(nameInput).toBeVisible();
 
-  await page.getByRole('button', { name: /save|create/i }).click();
+  await nameInput.fill('E2E Abandoned Cart');
 
-  await page.goto(`${adminUrl}/marketing/automation/flows`);
-  await page.getByRole('row', { name: /E2E Abandoned Cart/i }).getByRole('link', { name: /edit/i }).click();
+  await page
+    .locator('select[v-model="form.template_key"]')
+    .selectOption({ label: /abandoned cart/i });
 
-  // One-minute trigger delay: a short enough window for the e2e run.
-  await page.getByLabel(/abandon delay/i).fill('1');
+  await page.locator('.primary-button', { hasText: /^save$/i }).last().click();
 
-  // Replace the WhatsApp step with a plain email step, since no provider is configured.
-  const whatsappCard = page.locator('[data-step-type="send_whatsapp"]');
-  if (await whatsappCard.count()) {
-    await whatsappCard.getByRole('button', { name: /remove|delete/i }).click();
-  }
+  await expect(page.getByText(/e2e abandoned cart/i).first()).toBeVisible();
 
-  await page.getByRole('button', { name: /^activate$/i }).click();
+  await page
+    .getByRole('row', { name: /e2e abandoned cart/i })
+    .getByTitle(/edit/i)
+    .click();
 
-  await expect(page.getByText(/active/i).first()).toBeVisible();
+  await page.locator('.secondary-button', { hasText: /^activate$/i }).first().click();
 
-  // Phase 2 — a guest shops, leaves an email at checkout and abandons the cart.
+  await expect(page.getByText(/flow activated|active/i).first()).toBeVisible();
+
+  // The guest shops, leaves an email at checkout and abandons the cart.
   await page.goto(shopUrl);
 
   await page.getByRole('link', { name: /shop|category/i }).first().click();
+
   await page.getByRole('link', { name: /product|view/i }).first().click();
 
-  await page.getByRole('button', { name: /add to cart/i }).click();
-  await expect(page.getByRole('link', { name: /cart/i })).toBeVisible();
+  await page.getByRole('button', { name: /add to cart/i }).first().click();
+
+  await expect(page.getByRole('link', { name: /cart/i }).first()).toBeVisible();
 
   await page.goto('/checkout/cart');
-  await page.getByRole('link', { name: /continue|checkout/i }).click();
 
-  await page.getByRole('textbox', { name: /email/i }).fill(guestEmail);
+  await page.getByRole('link', { name: /continue|checkout/i }).first().click();
+
+  const captureEmail = page.locator('#ma-contact-capture input[type="email"]');
+
+  await expect(captureEmail).toBeVisible();
+
+  await captureEmail.fill(guestEmail);
 
   // Leave before completing checkout: the cart goes idle with the email captured.
   await page.close();
@@ -89,13 +95,6 @@ test('admin creates the abandoned cart flow and a guest gets the recovery email'
 test('the restore link in the logged email rebuilds the cart', async ({ page }) => {
   test.setTimeout(120_000);
 
-  // Phase 3 — run by the operator while this spec is paused, because a
-  // Playwright spec cannot invoke artisan on the host:
-  //
-  //   php artisan automation:detect-abandoned-carts
-  //   php artisan automation:dispatch-due --now
-  //
-  // Then read storage/logs/laravel.log for the message with the restore URL.
   const logPath = process.env.E2E_MAIL_LOG ?? 'storage/logs/laravel.log';
   const { readFileSync } = await import('node:fs');
 
