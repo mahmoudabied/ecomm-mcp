@@ -106,9 +106,8 @@ class ContextBuilder
     }
 
     /**
-     * Build the store-level context shared by every message. The store is the
-     * message's own channel, not whatever channel the request happens to run
-     * on, so non-default channels get their own name and hostname.
+     * Build the store context shared by every message, from the message's own channel
+     * rather than the request's, so non-default channels get their own name and host.
      */
     protected function baseContext(Channel $channel, ?string $locale): array
     {
@@ -130,8 +129,7 @@ class ContextBuilder
      */
     protected function channelFor(int $channelId): Channel
     {
-        return Channel::query()->find($channelId)
-            ?? core()->getCurrentChannel();
+        return $this->channelUrl->channel($channelId);
     }
 
     /**

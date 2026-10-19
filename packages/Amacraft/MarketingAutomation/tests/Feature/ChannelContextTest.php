@@ -3,7 +3,11 @@
 use Amacraft\MarketingAutomation\Models\AbandonedCart;
 use Amacraft\MarketingAutomation\Models\Contact;
 use Amacraft\MarketingAutomation\Models\Enrolment;
+use Amacraft\MarketingAutomation\Models\MessageLog;
+use Amacraft\MarketingAutomation\Rendering\ChannelUrl;
 use Amacraft\MarketingAutomation\Rendering\ContextBuilder;
+use Amacraft\MarketingAutomation\Rendering\LinkTracker;
+use Amacraft\MarketingAutomation\Services\UnsubscribeLink;
 use Webkul\Core\Models\Channel;
 
 function secondStoreChannel(): Channel
@@ -67,4 +71,29 @@ it('builds restore and tracking links on the message channel hostname', function
     expect($context['store']['name'])->toBe('Second Store')
         ->and($context['store']['url'])->toStartWith(channelScheme().'://shop2.example.com')
         ->and($context['cart']['restore_url'] ?? '')->toStartWith(channelScheme().'://shop2.example.com/automation/cart/restore/');
+});
+
+it('builds tracking and unsubscribe links on the message channel hostname', function () {
+    $channel = secondStoreChannel();
+
+    $log = MessageLog::factory()->create([
+        'channel_id'   => $channel->id,
+        'is_marketing' => true,
+    ]);
+
+    $html = app(LinkTracker::class)->rewrite($log, '<a href="https://example.org/sale">Sale</a></body>');
+
+    $host = channelScheme().'://shop2.example.com/';
+
+    expect($html)->toContain('href="'.$host)
+        ->and($html)->toContain('<img src="'.$host)
+        ->and(app(UnsubscribeLink::class)->forEmail($log, 'contact-uuid'))->toStartWith($host.'automation/unsubscribe/');
+});
+
+it('keeps a scheme stored on the channel hostname', function () {
+    $channel = secondStoreChannel();
+
+    $channel->update(['hostname' => 'http://shop3.example.com/']);
+
+    expect(app(ChannelUrl::class)->to('shop.home.index', $channel))->toBe('http://shop3.example.com/');
 });

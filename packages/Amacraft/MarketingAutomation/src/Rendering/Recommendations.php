@@ -3,6 +3,7 @@
 namespace Amacraft\MarketingAutomation\Rendering;
 
 use Illuminate\Support\Facades\DB;
+use Webkul\Core\Models\Channel;
 use Webkul\Product\Models\Product;
 
 class Recommendations
@@ -12,6 +13,13 @@ class Recommendations
      * saleability filters still leave enough rows to fill the requested count.
      */
     protected const CANDIDATE_MULTIPLIER = 4;
+
+    /**
+     * Create a new recommendations instance.
+     */
+    public function __construct(
+        protected ChannelUrl $channelUrl,
+    ) {}
 
     /**
      * The products to promote inside a product_grid block, already formatted
@@ -39,8 +47,10 @@ class Recommendations
             ->get()
             ->filter(fn (Product $product) => $product->isSaleable());
 
+        $channel = $this->channelUrl->channel($channelId);
+
         return $products
-            ->map(fn (Product $product) => $this->present($product))
+            ->map(fn (Product $product) => $this->present($product, $channel))
             ->take($count)
             ->values()
             ->all();
@@ -159,13 +169,13 @@ class Recommendations
      *
      * @return array{name: string, price_formatted: string, image_url: string, url: string}
      */
-    protected function present(Product $product): array
+    protected function present(Product $product, Channel $channel): array
     {
         return [
             'name'            => (string) $product->name,
             'price_formatted' => core()->formatPrice((float) $product->price),
             'image_url'       => (string) (product_image()->getProductBaseImage($product)['medium_image_url'] ?? ''),
-            'url'             => route('shop.product_or_category.index', $product->url_key),
+            'url'             => $this->channelUrl->to('shop.product_or_category.index', $channel, $product->url_key),
         ];
     }
 }

@@ -3,7 +3,6 @@
 namespace Amacraft\MarketingAutomation\Rendering;
 
 use Amacraft\MarketingAutomation\Models\MessageLog;
-use Webkul\Core\Models\Channel;
 
 class LinkTracker
 {
@@ -84,9 +83,6 @@ class LinkTracker
      */
     protected function trackUrl(MessageLog $log, string $route, mixed $parameters): string
     {
-        $channel = Channel::query()->find($log->channel_id)
-            ?? core()->getCurrentChannel();
-
-        return $this->channelUrl->to($route, $channel, $parameters);
+        return $this->channelUrl->to($route, $this->channelUrl->channel($log->channel_id), $parameters);
     }
 }

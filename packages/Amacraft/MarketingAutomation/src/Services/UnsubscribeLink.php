@@ -5,7 +5,6 @@ namespace Amacraft\MarketingAutomation\Services;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
 use Amacraft\MarketingAutomation\Models\MessageLog;
 use Amacraft\MarketingAutomation\Rendering\ChannelUrl;
-use Webkul\Core\Models\Channel;
 
 class UnsubscribeLink
 {
@@ -18,9 +17,8 @@ class UnsubscribeLink
     ) {}
 
     /**
-     * The one-click unsubscribe URL of a marketing email, or null for
-     * transactional mail, which never carries one (FR-023). The link lives on
-     * the message's own channel, so non-default stores point at their host.
+     * The one-click unsubscribe URL of a marketing email on its own channel host;
+     * null for transactional mail, which never carries one (FR-023).
      */
     public function forEmail(MessageLog $log, ?string $contactUuid): ?string
     {
@@ -28,10 +26,7 @@ class UnsubscribeLink
             return null;
         }
 
-        $channel = Channel::query()->find($log->channel_id)
-            ?? core()->getCurrentChannel();
-
-        return $this->channelUrl->to('shop.automation.unsubscribe', $channel, $this->signedToken->make(
+        return $this->channelUrl->to('shop.automation.unsubscribe', $this->channelUrl->channel($log->channel_id), $this->signedToken->make(
             (string) $contactUuid,
             MessageChannel::Email->value,
             (string) $log->uuid,
