@@ -130,3 +130,24 @@ it('injects the preferences link into the :theme profile page', function (string
         ->assertOk()
         ->assertSee('id="ma-preferences-link"', escape: false);
 })->with(installedShopThemes());
+
+it('scopes every precompiled utility under .ma-root so the host theme keeps its own classes', function (string $file) {
+    $css = file_get_contents(dirname(__DIR__, 2).'/src/Resources/assets/css/'.$file);
+
+    preg_match_all('/(?:^|[{}])\s*([^{}@][^{}]*)\{/', $css, $matches);
+
+    $unscoped = array_filter(
+        $matches[1],
+        fn (string $selector) => trim($selector) !== '.ma-root' && ! str_starts_with(trim($selector), '.ma-root '),
+    );
+
+    expect($unscoped)->toBe([])
+        ->and($css)->not->toContain('prefers-color-scheme');
+})->with(['ma-shop.css', 'ma-admin.css']);
+
+it('wraps the injected storefront snippets in the .ma-root scope', function () {
+    $html = view('marketing_automation::shop.consent-checkboxes')->render();
+
+    expect($html)->toContain('class="ma-root"')
+        ->and($html)->toContain('id="ma-consent-checkboxes"');
+});

@@ -1,5 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+    // Every utility is scoped under .ma-root, so the package CSS never
+    // overrides the host theme's own classes outside package markup.
+    important: ".ma-root",
+
+    darkMode: "class",
+
     content: [
         "./src/Resources/views/shop/**/*.blade.php",
         "./src/Resources/views/admin/**/*.blade.php",

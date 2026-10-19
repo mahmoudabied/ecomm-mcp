@@ -5,3 +5,7 @@
 */
 
 @tailwind utilities;
+
+.ma-root {
+    display: contents;
+}
