@@ -2,8 +2,9 @@
 
 namespace Amacraft\MarketingAutomation\Http\Controllers\Shop;
 
+use Amacraft\MarketingAutomation\Enums\ConsentStatus;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
-use Amacraft\MarketingAutomation\Models\Contact;
+use Amacraft\MarketingAutomation\Repositories\ContactRepository;
 use Amacraft\MarketingAutomation\Services\ConsentConfirmation;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Illuminate\Routing\Controller;
@@ -17,6 +18,7 @@ class ConsentConfirmationController extends Controller
     public function __construct(
         protected ConsentConfirmation $confirmation,
         protected ConsentService $consentService,
+        protected ContactRepository $contactRepository,
     ) {}
 
     /**
@@ -33,24 +35,24 @@ class ConsentConfirmationController extends Controller
 
     /**
      * Grant the pending consent; the signed token is the proof of ownership.
+     * The page only says "confirmed" when the consent really ends up granted.
      */
     public function confirm(string $token): View
     {
         $parsed = $this->confirmation->parse($token);
 
-        if ($parsed !== null) {
-            /** @var ?Contact $contact */
-            $contact = Contact::query()->where('uuid', $parsed[0])->first();
+        $contact = $parsed !== null
+            ? $this->contactRepository->findOneByField('uuid', $parsed[0])
+            : null;
 
-            if ($contact !== null) {
-                $this->consentService->confirmPending($contact, $parsed[1]);
-            }
-        }
+        $consent = $contact !== null
+            ? $this->consentService->confirmPending($contact, $parsed[1])
+            : null;
 
         return view('marketing_automation::shop.consent-confirmation', [
             'token'     => $token,
             'channel'   => $parsed[1] ?? MessageChannel::Email,
-            'confirmed' => $parsed !== null,
+            'confirmed' => $consent?->status === ConsentStatus::Granted,
         ]);
     }
 }

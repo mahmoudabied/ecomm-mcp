@@ -24,11 +24,8 @@ class ConsentService
     ) {}
 
     /**
-     * Grant consent for the given message channel and record the event.
-     *
-     * Requests that are not authenticated only start a pending consent when
-     * double opt-in is on; the ConfirmationService turns it into a grant once
-     * the shopper follows the signed link.
+     * Grant consent for the channel; unauthenticated requests only start a pending consent under double opt-in.
+     * They never touch a consent that is already granted, so a third party cannot downgrade it.
      */
     public function grant(
         Contact $contact,
@@ -38,6 +35,12 @@ class ConsentService
         bool $trusted = true,
     ): Consent {
         if (! $trusted && $this->settings->doubleOptIn()) {
+            $existing = $this->current($contact, $channel);
+
+            if ($existing?->status === ConsentStatus::Granted) {
+                return $existing;
+            }
+
             return $this->record($contact, $channel, ConsentStatus::Pending, $source, $request);
         }
 
@@ -50,10 +53,7 @@ class ConsentService
      */
     public function confirmPending(Contact $contact, MessageChannel $channel): ?Consent
     {
-        $consent = Consent::query()
-            ->where('contact_id', $contact->id)
-            ->where('channel', $channel->value)
-            ->first();
+        $consent = $this->current($contact, $channel);
 
         if ($consent?->status !== ConsentStatus::Pending) {
             return $consent;
@@ -81,11 +81,18 @@ class ConsentService
      */
     public function status(Contact $contact, MessageChannel $channel): ConsentStatus
     {
-        return Consent::query()
-            ->where('contact_id', $contact->id)
-            ->where('channel', $channel->value)
-            ->first()
-            ?->status ?? ConsentStatus::None;
+        return $this->current($contact, $channel)?->status ?? ConsentStatus::None;
+    }
+
+    /**
+     * The stored consent of a contact on a channel, if any.
+     */
+    protected function current(Contact $contact, MessageChannel $channel): ?Consent
+    {
+        return $this->consentRepository->findOneWhere([
+            'contact_id' => $contact->id,
+            'channel'    => $channel->value,
+        ]);
     }
 
     /**

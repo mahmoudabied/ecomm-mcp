@@ -8,6 +8,7 @@ use Amacraft\MarketingAutomation\Jobs\ProcessBackInStockSubscriptions;
 use Amacraft\MarketingAutomation\Jobs\ProcessEnrolmentStep;
 use Amacraft\MarketingAutomation\Jobs\ProcessWebhook;
 use Amacraft\MarketingAutomation\Jobs\RecordMessageEvent;
+use Amacraft\MarketingAutomation\Jobs\SendConsentConfirmation;
 use Amacraft\MarketingAutomation\Jobs\SyncWhatsAppTemplates;
 use App\Tenant\AppTenantDomainTenantFinder;
 use Illuminate\Broadcasting\BroadcastEvent;
@@ -183,6 +184,7 @@ return [
         ProcessEnrolmentStep::class,
         ProcessWebhook::class,
         RecordMessageEvent::class,
+        SendConsentConfirmation::class,
         SyncWhatsAppTemplates::class,
     ],
 ];

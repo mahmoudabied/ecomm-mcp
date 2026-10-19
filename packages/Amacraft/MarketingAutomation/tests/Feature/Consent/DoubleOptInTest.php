@@ -3,6 +3,7 @@
 use Amacraft\MarketingAutomation\Enums\ConsentSource;
 use Amacraft\MarketingAutomation\Enums\ConsentStatus;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
+use Amacraft\MarketingAutomation\Jobs\SendConsentConfirmation;
 use Amacraft\MarketingAutomation\Mail\AutomationMail;
 use Amacraft\MarketingAutomation\Models\Consent;
 use Amacraft\MarketingAutomation\Models\Contact;
@@ -11,7 +12,9 @@ use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\ContactResolver;
 use Illuminate\Cookie\CookieValuePrefix;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Webkul\Core\Models\Channel;
 use Webkul\Core\Models\CoreConfig;
 use Webkul\Customer\Models\Customer;
@@ -179,4 +182,107 @@ it('never hands out the visitor cookie of a matched contact to a guest', functio
 
     expect($cookie)->not->toBeNull()
         ->and($decrypted)->toBe(Contact::query()->where('email', 'fresh-cookie@example.com')->first()->uuid);
+});
+
+it('never downgrades a granted consent when a guest posts the same email', function () {
+    $contact = app(ContactResolver::class)->resolve(
+        channelId: (int) Channel::query()->first()->id,
+        customerId: null,
+        email: 'granted@example.com',
+    );
+
+    app(ConsentService::class)->grant($contact, MessageChannel::Email, ConsentSource::Account);
+
+    Queue::fake();
+
+    Event::fake(['marketing_automation.consent.changed']);
+
+    $this->post(route('shop.automation.checkout-contact'), [
+        'email'    => 'granted@example.com',
+        'consents' => ['email' => true],
+    ])->assertNoContent();
+
+    expect(app(ConsentService::class)->status($contact, MessageChannel::Email))->toBe(ConsentStatus::Granted);
+
+    Event::assertNotDispatched('marketing_automation.consent.changed');
+
+    Queue::assertNotPushed(SendConsentConfirmation::class);
+});
+
+it('queues the confirmation instead of sending it during the request', function () {
+    Queue::fake();
+
+    Mail::fake();
+
+    $this->post(route('shop.automation.checkout-contact'), [
+        'email'    => 'queued@example.com',
+        'consents' => ['email' => true],
+    ])->assertNoContent();
+
+    Mail::assertNothingSent();
+
+    Queue::assertPushed(SendConsentConfirmation::class, fn (SendConsentConfirmation $job) => $job->channel === 'email');
+});
+
+it('caps the confirmations one recipient can receive per day', function () {
+    Queue::fake();
+
+    foreach (range(1, 5) as $attempt) {
+        $this->post(route('shop.automation.checkout-contact'), [
+            'email'    => 'pumped@example.com',
+            'consents' => ['email' => true],
+        ]);
+    }
+
+    Queue::assertPushed(SendConsentConfirmation::class, 3);
+});
+
+it('caps the confirmations the store sends per channel per day', function () {
+    config(['marketing-automation.confirmation.daily_limit' => 2]);
+
+    Queue::fake();
+
+    foreach (range(1, 4) as $attempt) {
+        $this->post(route('shop.automation.checkout-contact'), [
+            'email'    => "store-cap-{$attempt}@example.com",
+            'consents' => ['email' => true],
+        ]);
+    }
+
+    Queue::assertPushed(SendConsentConfirmation::class, 2);
+});
+
+it('does not report a revoked consent as confirmed when an old link is followed', function () {
+    $contact = app(ContactResolver::class)->resolve(
+        channelId: (int) Channel::query()->first()->id,
+        customerId: null,
+        email: 'revoked-later@example.com',
+    );
+
+    app(ConsentService::class)->revoke($contact, MessageChannel::Email, ConsentSource::Account);
+
+    $token = app(ConsentConfirmation::class)->token($contact, MessageChannel::Email);
+
+    $this->post(route('shop.automation.consent.confirm', $token))
+        ->assertOk()
+        ->assertViewHas('confirmed', false);
+
+    expect(app(ConsentService::class)->status($contact, MessageChannel::Email))->toBe(ConsentStatus::Revoked);
+});
+
+it('reports a pending consent as confirmed once the link is followed', function () {
+    Queue::fake();
+
+    $this->post(route('shop.automation.checkout-contact'), [
+        'email'    => 'confirmed-page@example.com',
+        'consents' => ['email' => true],
+    ]);
+
+    $contact = Contact::query()->where('email', 'confirmed-page@example.com')->first();
+
+    $token = app(ConsentConfirmation::class)->token($contact, MessageChannel::Email);
+
+    $this->post(route('shop.automation.consent.confirm', $token))
+        ->assertOk()
+        ->assertViewHas('confirmed', true);
 });

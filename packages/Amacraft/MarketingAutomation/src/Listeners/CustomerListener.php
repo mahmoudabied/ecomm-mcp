@@ -108,7 +108,7 @@ class CustomerListener
             $consent = $this->consentService->grant($contact, $channel, ConsentSource::Registration, request(), false);
 
             if ($consent->status === ConsentStatus::Pending) {
-                $this->confirmation->send($contact, $channel, $salesChannel);
+                $this->confirmation->request($contact, $channel, $salesChannel);
             }
         }
     }

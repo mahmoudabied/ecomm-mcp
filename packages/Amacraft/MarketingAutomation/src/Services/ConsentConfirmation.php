@@ -6,11 +6,13 @@ use Amacraft\MarketingAutomation\DTOs\OutboundMessage;
 use Amacraft\MarketingAutomation\DTOs\WhatsAppTemplateCall;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
 use Amacraft\MarketingAutomation\Enums\WhatsAppTemplateStatus;
+use Amacraft\MarketingAutomation\Jobs\SendConsentConfirmation;
 use Amacraft\MarketingAutomation\Mail\AutomationMail;
 use Amacraft\MarketingAutomation\Models\Contact;
 use Amacraft\MarketingAutomation\Models\ProviderConnection;
 use Amacraft\MarketingAutomation\Rendering\ChannelUrl;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Webkul\Core\Models\Channel;
 
@@ -22,6 +24,11 @@ class ConsentConfirmation
     protected const TTL_DAYS = 3;
 
     /**
+     * The number of confirmations one email address or phone may receive per day.
+     */
+    protected const RECIPIENT_LIMIT_PER_DAY = 3;
+
+    /**
      * Create a new consent confirmation instance.
      */
     public function __construct(
@@ -30,6 +37,23 @@ class ConsentConfirmation
         protected Settings $settings,
         protected ProviderManager $providerManager,
     ) {}
+
+    /**
+     * Queue the confirmation for a pending consent, unless the recipient or the store hit the daily cap.
+     */
+    public function request(Contact $contact, MessageChannel $channel, Channel $salesChannel): void
+    {
+        $recipient = $channel === MessageChannel::Email ? $contact->email : $contact->phone_e164;
+
+        if (
+            $recipient === null
+            || ! $this->withinLimits($channel, $recipient)
+        ) {
+            return;
+        }
+
+        SendConsentConfirmation::dispatch((int) $contact->id, $channel->value, (int) $salesChannel->id);
+    }
 
     /**
      * Deliver the double opt-in confirmation for a pending consent request.
@@ -69,8 +93,7 @@ class ConsentConfirmation
     }
 
     /**
-     * Verify a token and return its contact uuid and channel, or null when it
-     * was tampered with, is of another kind, or has expired.
+     * The contact uuid and channel of a token, or null when it was tampered with, is of another kind or expired.
      *
      * @return array{0: string, 1: MessageChannel}|null
      */
@@ -94,6 +117,25 @@ class ConsentConfirmation
     }
 
     /**
+     * Count one confirmation against the store-wide and per-recipient daily caps; true when it may go out.
+     */
+    protected function withinLimits(MessageChannel $channel, string $recipient): bool
+    {
+        $dailyLimit = (int) config('marketing-automation.confirmation.daily_limit', 500);
+
+        if (! RateLimiter::attempt('ma-confirm:'.$channel->value, $dailyLimit, fn () => null, 86400)) {
+            return false;
+        }
+
+        return RateLimiter::attempt(
+            'ma-confirm:'.$channel->value.':'.sha1(strtolower($recipient)),
+            self::RECIPIENT_LIMIT_PER_DAY,
+            fn () => null,
+            86400,
+        );
+    }
+
+    /**
      * Mail the confirmation link to the contact.
      */
     protected function sendEmail(Contact $contact, MessageChannel $channel, Channel $salesChannel, string $link): void
@@ -114,9 +156,8 @@ class ConsentConfirmation
     }
 
     /**
-     * Send the confirmation link through the channel's default provider.
-     * WhatsApp only accepts template messages outside a conversation, so an
-     * approved utility template has to exist for the link to go out.
+     * Send the confirmation link through the channel's default provider; WhatsApp
+     * needs an approved utility template, since free text is rejected outside a conversation.
      */
     protected function sendViaProvider(
         Contact $contact,

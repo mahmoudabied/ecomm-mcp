@@ -7,6 +7,7 @@ use Amacraft\MarketingAutomation\Enums\ConsentSource;
 use Amacraft\MarketingAutomation\Enums\ConsentStatus;
 use Amacraft\MarketingAutomation\Enums\MessageChannel;
 use Amacraft\MarketingAutomation\Http\Requests\CheckoutContactRequest;
+use Amacraft\MarketingAutomation\Rendering\ChannelUrl;
 use Amacraft\MarketingAutomation\Services\ConsentConfirmation;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\ContactCookie;
@@ -27,6 +28,7 @@ class CheckoutContactController extends Controller
         protected ContactCookie $contactCookie,
         protected ConsentService $consentService,
         protected ConsentConfirmation $confirmation,
+        protected ChannelUrl $channelUrl,
         protected CartHelper $cartHelper,
         protected CartRepository $cartRepository,
     ) {}
@@ -91,7 +93,7 @@ class CheckoutContactController extends Controller
             $consent = $this->consentService->grant($contact, $channel, ConsentSource::Checkout, $request, $trusted);
 
             if ($consent->status === ConsentStatus::Pending) {
-                $this->confirmation->send($contact, $channel, $salesChannel);
+                $this->confirmation->request($contact, $channel, $salesChannel);
             }
         }
     }
@@ -101,7 +103,6 @@ class CheckoutContactController extends Controller
      */
     protected function salesChannel(int $channelId): Channel
     {
-        return Channel::query()->find($channelId)
-            ?? core()->getCurrentChannel();
+        return $this->channelUrl->channel($channelId);
     }
 }

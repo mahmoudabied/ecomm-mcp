@@ -19,6 +19,12 @@ return [
      */
     'confirmation' => [
         'whatsapp_template' => env('MA_WHATSAPP_CONFIRM_TEMPLATE', 'consent_confirm'),
+
+        /**
+         * Store-wide cap on confirmations per channel per day, so scripted
+         * sign-ups cannot run up the SMS bill.
+         */
+        'daily_limit' => (int) env('MA_CONFIRM_DAILY_LIMIT', 500),
     ],
 
     /**
