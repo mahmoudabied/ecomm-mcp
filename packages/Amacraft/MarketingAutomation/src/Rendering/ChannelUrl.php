@@ -16,7 +16,9 @@ class ChannelUrl
     }
 
     /**
-     * The scheme and host the channel's links are built on.
+     * The scheme and host the channel's links are built on. Bagisto stores
+     * the channel hostname with its scheme, so any prefix is stripped and a
+     * scheme derived from APP_URL is applied instead.
      */
     protected function base(Channel $channel): string
     {
@@ -28,6 +30,8 @@ class ChannelUrl
 
         $scheme = str_starts_with($appUrl, 'http://') ? 'http' : 'https';
 
-        return $scheme.'://'.rtrim((string) $channel->hostname, '/');
+        $host = preg_replace('#^https?://#i', '', (string) $channel->hostname);
+
+        return $scheme.'://'.rtrim((string) $host, '/');
     }
 }

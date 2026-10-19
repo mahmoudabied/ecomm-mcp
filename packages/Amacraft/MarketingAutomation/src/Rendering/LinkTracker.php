@@ -3,9 +3,17 @@
 namespace Amacraft\MarketingAutomation\Rendering;
 
 use Amacraft\MarketingAutomation\Models\MessageLog;
+use Webkul\Core\Models\Channel;
 
 class LinkTracker
 {
+    /**
+     * Create a new link tracker instance.
+     */
+    public function __construct(
+        protected ChannelUrl $channelUrl,
+    ) {}
+
     /**
      * Rewrite the http(s) links of an email into signed tracking redirects,
      * append the open pixel and store the mapping on the message log.
@@ -29,7 +37,7 @@ class LinkTracker
 
                 $links[$hash] = $url;
 
-                return 'href="'.route('automation.track.click', [$log->uuid.'.'.$signature, $hash]).'"';
+                return 'href="'.$this->trackUrl($log, 'automation.track.click', [$log->uuid.'.'.$signature, $hash]).'"';
             },
             $html,
         ) ?? $html;
@@ -62,12 +70,23 @@ class LinkTracker
      */
     protected function appendOpenPixel(MessageLog $log, string $signature, string $html): string
     {
-        $pixel = '<img src="'.route('automation.track.open', $log->uuid.'.'.$signature).'" width="1" height="1" alt="">';
+        $pixel = '<img src="'.$this->trackUrl($log, 'automation.track.open', $log->uuid.'.'.$signature).'" width="1" height="1" alt="">';
 
         if (stripos($html, '</body>') !== false) {
             return str_ireplace('</body>', $pixel.'</body>', $html);
         }
 
         return $html.$pixel;
+    }
+
+    /**
+     * An absolute tracking URL on the message's own channel hostname.
+     */
+    protected function trackUrl(MessageLog $log, string $route, mixed $parameters): string
+    {
+        $channel = Channel::query()->find($log->channel_id)
+            ?? core()->getCurrentChannel();
+
+        return $this->channelUrl->to($route, $channel, $parameters);
     }
 }
