@@ -174,6 +174,7 @@ return [
         'templates-not-supported'   => 'هذا الاتصال لا يدعم قوالب واتساب.',
         'sync-templates-first'      => 'قم بمزامنة قوالب واتساب أولًا ثم أعد الاختبار.',
         'template-not-approved'     => 'القالب ":name" غير معتمد لهذا الاتصال.',
+        'must-be-digits'            => 'يجب أن يحتوي :attribute على أرقام فقط.',
         'driver-channel-mismatch'   => 'المزوّد المحدد لا يدعم قناة الرسائل هذه.',
         'driver-immutable'          => 'لا يمكن تغيير المزوّد وقناة الرسائل بعد الإنشاء.',
         'created'                   => 'تم إنشاء المزود.',

@@ -20,4 +20,13 @@ return [
     'confirmation' => [
         'whatsapp_template' => env('MA_WHATSAPP_CONFIRM_TEMPLATE', 'consent_confirm'),
     ],
+
+    /**
+     * The public URL providers sign their webhooks against. Set it when the
+     * store sits behind a proxy that does not pass X-Forwarded-Proto/Host, so
+     * Twilio signature checks keep matching.
+     */
+    'webhooks' => [
+        'public_base_url' => env('MA_PUBLIC_BASE_URL'),
+    ],
 ];

@@ -2,12 +2,12 @@
 
 namespace Amacraft\MarketingAutomation\Http\Requests;
 
+use Amacraft\MarketingAutomation\Enums\MessageChannel;
+use Amacraft\MarketingAutomation\Models\ProviderConnection;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
-use Amacraft\MarketingAutomation\Enums\MessageChannel;
-use Amacraft\MarketingAutomation\Models\ProviderConnection;
 
 class ProviderConnectionRequest extends FormRequest
 {
@@ -148,6 +148,17 @@ class ProviderConnectionRequest extends FormRequest
                 $validator->errors()->add(
                     "credentials.{$field['name']}",
                     trans('validation.required', ['attribute' => $field['label']]),
+                );
+            }
+
+            if (
+                filled($value)
+                && ! empty($field['numeric'])
+                && ! preg_match('/^\d+$/', (string) $value)
+            ) {
+                $validator->errors()->add(
+                    "credentials.{$field['name']}",
+                    trans('marketing_automation::app.providers.must-be-digits', ['attribute' => $field['label']]),
                 );
             }
         }

@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Webkul\Core\Models\Channel;
 use Amacraft\MarketingAutomation\DTOs\InboundMessage;
 use Amacraft\MarketingAutomation\Enums\ConsentSource;
 use Amacraft\MarketingAutomation\Enums\ConsentStatus;
@@ -24,6 +21,9 @@ use Amacraft\MarketingAutomation\Services\Providers\MetaCloudWhatsAppProvider;
 use Amacraft\MarketingAutomation\Services\Providers\TwilioWhatsAppProvider;
 use Amacraft\MarketingAutomation\Services\Providers\VonageSmsProvider;
 use Amacraft\MarketingAutomation\Services\WebhookProcessor;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Webkul\Core\Models\Channel;
 
 function webhookUrl(ProviderConnection $connection, string $action = 'receive'): string
 {
@@ -75,6 +75,28 @@ it('accepts a Twilio webhook with a valid signature', function () {
     expect($log->refresh()->status->value)->toBe('delivered')
         ->and($log->delivered_at)->not->toBeNull()
         ->and(MessageEvent::query()->where('message_log_id', $log->id)->where('type', 'delivered')->exists())->toBeTrue();
+});
+
+it('accepts a Twilio webhook signed against the configured public base URL', function () {
+    config(['marketing-automation.webhooks.public_base_url' => 'https://public.example.com']);
+
+    $connection = ProviderConnection::factory()->sms()->create([
+        'driver'      => 'twilio',
+        'credentials' => ['account_sid' => 'ACtest1234567890', 'auth_token' => 'twilio-token'],
+    ]);
+
+    $log = smsMessageLog($connection, 'SMtwilio789');
+
+    $params = ['MessageSid' => 'SMtwilio789', 'MessageStatus' => 'delivered'];
+
+    $publicUrl = 'https://public.example.com'.parse_url(webhookUrl($connection), PHP_URL_PATH);
+
+    $signature = twilioSignature($publicUrl, $params, 'twilio-token');
+
+    $this->post(webhookUrl($connection), $params, ['X-Twilio-Signature' => $signature])
+        ->assertOk();
+
+    expect($log->refresh()->status->value)->toBe('delivered');
 });
 
 it('rejects a Twilio webhook with a bad signature', function () {

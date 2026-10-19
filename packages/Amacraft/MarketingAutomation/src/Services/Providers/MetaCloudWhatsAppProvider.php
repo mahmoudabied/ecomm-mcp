@@ -2,10 +2,6 @@
 
 namespace Amacraft\MarketingAutomation\Services\Providers;
 
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\Response;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Amacraft\MarketingAutomation\Contracts\Providers\SupportsInboundOptOut;
 use Amacraft\MarketingAutomation\Contracts\Providers\WhatsAppTemplateSource;
 use Amacraft\MarketingAutomation\DTOs\InboundMessage;
@@ -16,6 +12,10 @@ use Amacraft\MarketingAutomation\DTOs\WhatsAppTemplateCall;
 use Amacraft\MarketingAutomation\DTOs\WhatsAppTemplateData;
 use Amacraft\MarketingAutomation\Enums\WhatsAppTemplateStatus;
 use Amacraft\MarketingAutomation\Models\ProviderConnection;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class MetaCloudWhatsAppProvider extends AbstractHttpProvider implements SupportsInboundOptOut, WhatsAppTemplateSource
 {
@@ -26,8 +26,8 @@ class MetaCloudWhatsAppProvider extends AbstractHttpProvider implements Supports
     {
         return [
             ['name' => 'access_token', 'label' => 'Access Token', 'type' => 'password', 'secret' => true, 'required' => true],
-            ['name' => 'phone_number_id', 'label' => 'Phone Number ID', 'type' => 'text', 'secret' => false, 'required' => true],
-            ['name' => 'waba_id', 'label' => 'WABA ID', 'type' => 'text', 'secret' => false, 'required' => true],
+            ['name' => 'phone_number_id', 'label' => 'Phone Number ID', 'type' => 'text', 'secret' => false, 'required' => true, 'numeric' => true],
+            ['name' => 'waba_id', 'label' => 'WABA ID', 'type' => 'text', 'secret' => false, 'required' => true, 'numeric' => true],
             ['name' => 'app_secret', 'label' => 'App Secret', 'type' => 'password', 'secret' => true, 'required' => true],
         ];
     }

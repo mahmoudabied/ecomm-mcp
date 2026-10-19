@@ -2,13 +2,13 @@
 
 namespace Amacraft\MarketingAutomation\Services\Providers\Concerns;
 
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\Response;
-use Illuminate\Http\Request;
 use Amacraft\MarketingAutomation\DTOs\InboundMessage;
 use Amacraft\MarketingAutomation\DTOs\SendResult;
 use Amacraft\MarketingAutomation\DTOs\StatusUpdate;
 use Amacraft\MarketingAutomation\Models\ProviderConnection;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
+use Illuminate\Http\Request;
 
 trait TwilioCommon
 {
@@ -54,6 +54,9 @@ trait TwilioCommon
 
     /**
      * Validate the X-Twilio-Signature header on an inbound webhook request.
+     * The URL that is signed is the public one Twilio called; behind a proxy
+     * that does not pass X-Forwarded-Proto the request URL differs, so the
+     * public base can be pinned via marketing-automation.webhooks.public_base_url.
      */
     protected function verifyTwilioSignature(Request $request, ProviderConnection $connection): bool
     {
@@ -63,7 +66,8 @@ trait TwilioCommon
             return false;
         }
 
-        $url = $request->fullUrl();
+        $url = $this->signedUrl($request);
+
         $params = $request->post() ?: [];
 
         ksort($params);
@@ -77,6 +81,21 @@ trait TwilioCommon
         $expected = base64_encode(hash_hmac('sha1', $data, (string) ($connection->credentials['auth_token'] ?? ''), true));
 
         return hash_equals($expected, $signature);
+    }
+
+    /**
+     * The URL Twilio signed: the configured public base when set, otherwise
+     * the request's own full URL.
+     */
+    protected function signedUrl(Request $request): string
+    {
+        $base = (string) config('marketing-automation.webhooks.public_base_url');
+
+        if (blank($base)) {
+            return $request->fullUrl();
+        }
+
+        return rtrim($base, '/').$request->getRequestUri();
     }
 
     /**

@@ -174,6 +174,7 @@ return [
         'templates-not-supported' => 'This connection does not support WhatsApp templates.',
         'sync-templates-first'    => 'Sync WhatsApp templates first, then test again.',
         'template-not-approved'   => 'The template ":name" is not approved for this connection.',
+        'must-be-digits'          => 'The :attribute must contain digits only.',
         'driver-channel-mismatch' => 'The selected driver does not support this message channel.',
         'driver-immutable'        => 'The driver and message channel cannot be changed after creation.',
         'created'                 => 'Provider created.',

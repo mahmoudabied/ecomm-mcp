@@ -2,6 +2,11 @@
 
 namespace Amacraft\MarketingAutomation\Http\Controllers\Shop;
 
+use Amacraft\MarketingAutomation\Contracts\AbandonedCart;
+use Amacraft\MarketingAutomation\Enums\MessageEventType;
+use Amacraft\MarketingAutomation\Repositories\AbandonedCartRepository;
+use Amacraft\MarketingAutomation\Repositories\MessageLogRepository;
+use Amacraft\MarketingAutomation\Services\RestoreToken;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -10,11 +15,6 @@ use Webkul\Checkout\Contracts\Cart;
 use Webkul\Checkout\Contracts\CartItem;
 use Webkul\Checkout\Repositories\CartRepository;
 use Webkul\Customer\Contracts\Customer;
-use Amacraft\MarketingAutomation\Contracts\AbandonedCart;
-use Amacraft\MarketingAutomation\Enums\MessageEventType;
-use Amacraft\MarketingAutomation\Repositories\AbandonedCartRepository;
-use Amacraft\MarketingAutomation\Repositories\MessageLogRepository;
-use Amacraft\MarketingAutomation\Services\RestoreToken;
 
 class CartRestoreController extends Controller
 {
@@ -111,9 +111,49 @@ class CartRestoreController extends Controller
             return;
         }
 
+        $this->copyAddresses($cart, $guestCart);
+
         $this->cartHelper->collectTotals();
 
         $this->abandonedCartRepository->update(['restored_cart_id' => $guestCart->id], $abandoned->id);
+    }
+
+    /**
+     * Mirror the abandoned cart's billing and shipping addresses onto the
+     * guest cart, so checkout continues with the details already entered.
+     */
+    protected function copyAddresses(Cart $source, Cart $guestCart): void
+    {
+        foreach (['billing_address', 'shipping_address'] as $relation) {
+            $address = $source->{$relation};
+
+            if (
+                $address === null
+                || $guestCart->{$relation} !== null
+            ) {
+                continue;
+            }
+
+            $guestCart->{$relation}()->create(collect($address->getAttributes())
+                ->only([
+                    'address_type',
+                    'use_for_shipping',
+                    'default_address',
+                    'company_name',
+                    'first_name',
+                    'last_name',
+                    'email',
+                    'address',
+                    'country',
+                    'state',
+                    'city',
+                    'postcode',
+                    'phone',
+                    'vat_id',
+                ])
+                ->merge(['customer_id' => $guestCart->customer_id])
+                ->all());
+        }
     }
 
     /**

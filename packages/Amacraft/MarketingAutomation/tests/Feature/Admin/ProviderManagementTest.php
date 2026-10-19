@@ -49,6 +49,26 @@ it('creates a provider connection in the untested state', function () {
         ->and($connection->uuid)->not->toBeEmpty();
 });
 
+it('rejects non numeric Meta phone number and WABA ids', function () {
+    $this->loginAsAdmin();
+
+    postJson(providerEndpoint('store'), [
+        'name'            => 'Meta broken',
+        'message_channel' => 'whatsapp',
+        'driver'          => 'meta_cloud',
+        'sender'          => 'Bagisto',
+        'credentials'     => [
+            'access_token'    => 'mtok',
+            'phone_number_id' => 'not-digits',
+            'waba_id'         => 'abc123',
+            'app_secret'      => 'msecret',
+        ],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['credentials.phone_number_id', 'credentials.waba_id']);
+
+    expect(ProviderConnection::query()->where('name', 'Meta broken')->exists())->toBeFalse();
+});
+
 it('masks secret credentials in the show endpoint', function () {
     $this->loginAsAdmin();
 

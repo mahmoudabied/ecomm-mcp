@@ -1,12 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Mail;
-use Webkul\Attribute\Models\Attribute;
-use Webkul\Checkout\Models\Cart;
-use Webkul\Checkout\Models\CartItem;
-use Webkul\Customer\Models\Customer;
-use Webkul\Faker\Helpers\Product as ProductFaker;
 use Amacraft\MarketingAutomation\Console\Commands\DispatchDueCommand;
 use Amacraft\MarketingAutomation\DTOs\TriggerEvent;
 use Amacraft\MarketingAutomation\Engine\EnrolmentService;
@@ -25,6 +18,14 @@ use Amacraft\MarketingAutomation\Repositories\FlowRepository;
 use Amacraft\MarketingAutomation\Services\AbandonedCartService;
 use Amacraft\MarketingAutomation\Services\ConsentService;
 use Amacraft\MarketingAutomation\Services\RestoreToken;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Mail;
+use Webkul\Attribute\Models\Attribute;
+use Webkul\Checkout\Models\Cart;
+use Webkul\Checkout\Models\CartAddress;
+use Webkul\Checkout\Models\CartItem;
+use Webkul\Customer\Models\Customer;
+use Webkul\Faker\Helpers\Product as ProductFaker;
 use Webkul\Product\Models\Product;
 use Webkul\Product\Models\ProductAttributeValue;
 use Webkul\Sales\Models\Order;
@@ -227,6 +228,19 @@ it('copies a customer cart into a guest cart without a login redirect', function
 
     $cart = recCart(customerId: $customer->id);
 
+    $cart->billing_address()->create([
+        'address_type' => CartAddress::ADDRESS_TYPE_BILLING,
+        'first_name'   => 'Restored',
+        'last_name'    => 'Shopper',
+        'email'        => $customer->email,
+        'address'      => "12 Old Street\nMarina",
+        'country'      => 'SA',
+        'state'        => 'Riyadh',
+        'city'         => 'Riyadh',
+        'postcode'     => '12345',
+        'phone'        => '+966501234567',
+    ]);
+
     $abandoned = recDetect($cart);
 
     $token = app(RestoreToken::class)->for($abandoned);
@@ -245,7 +259,10 @@ it('copies a customer cart into a guest cart without a login redirect', function
 
     expect($restored->items->count())->toBe(1)
         ->and((int) $restored->items->first()->quantity)->toBe(2)
-        ->and($restored->customer_id)->toBeNull();
+        ->and($restored->customer_id)->toBeNull()
+        ->and($restored->billing_address?->first_name)->toBe('Restored')
+        ->and($restored->billing_address->phone)->toBe('+966501234567')
+        ->and($restored->billing_address->cart_id)->toBe($restoredCartId);
 });
 
 it('recovers the original abandoned cart when an order is placed from the restored cart', function () {
