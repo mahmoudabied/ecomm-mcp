@@ -81,11 +81,40 @@ it('pulls Klaviyo unsubscribes and revokes the matching store consents', functio
     Http::assertSent(fn ($request) => str_contains((string) $request->url(), 'include=profile%2Cmetric')
         || str_contains((string) $request->url(), 'include=profile,metric'));
 
+    foreach (['METRIC_UNSUB_EMAIL', 'METRIC_UNSUB_SMS'] as $metricId) {
+        Http::assertSent(fn ($request) => str_contains(urldecode((string) $request->url()), 'equals(metric_id,"'.$metricId.'")')
+            && str_contains((string) $request->url(), 'sort=datetime'));
+    }
+
     expect($consents->status($sara->fresh(), MessageChannel::Email))->toBe(ConsentStatus::Revoked)
         ->and($consents->status($omar->fresh(), MessageChannel::Sms))->toBe(ConsentStatus::Revoked)
         ->and($sara->fresh()->consents()->first()->source)->toBe(ConsentSource::Klaviyo)
         ->and($connection->fresh()->consent_cursor->equalTo('2026-10-11T11:45:00+00:00'))->toBeTrue()
         ->and($connection->fresh()->unsubscribed_metric_ids)->toBe(['METRIC_UNSUB_EMAIL', 'METRIC_UNSUB_SMS']);
+});
+
+it('keeps the consent cursor when a Klaviyo events page fails', function () {
+    $channelId = core()->getAllChannels()->first()->id;
+
+    $connection = Connection::factory()->create([
+        'channel_id'     => $channelId,
+        'consent_cursor' => '2026-10-09 00:00:00',
+    ]);
+
+    $firstPage = KlaviyoFixtures::body('unsubscribed_events_included_page');
+
+    $firstPage['links']['next'] = 'https://a.klaviyo.com/api/events?page%5Bcursor%5D=next-page';
+
+    Http::fake([
+        'a.klaviyo.com/api/metrics*' => Http::response(KlaviyoFixtures::body('metrics'), 200),
+        'a.klaviyo.com/api/events*'  => Http::sequence()
+            ->push($firstPage, 200)
+            ->push(KlaviyoFixtures::body('events_429'), 429),
+    ]);
+
+    $this->artisan('klaviyo:pull-consent')->assertSuccessful();
+
+    expect($connection->fresh()->consent_cursor->equalTo('2026-10-09 00:00:00'))->toBeTrue();
 });
 
 it('pushes store consent changes to the outbox as subscription rows', function () {
@@ -123,8 +152,8 @@ it('does not enrol abandoned carts natively when routing sends them to Klaviyo',
     Connection::factory()->create(['channel_id' => $channel->id]);
 
     CoreConfig::query()->updateOrCreate(
-        ['code' => 'marketing_automation.routing.settings.abandoned_cart'],
-        ['value' => 'klaviyo', 'channel_code' => $channel->code],
+        ['code' => 'marketing_automation.routing.settings.abandoned_cart', 'channel_code' => $channel->code],
+        ['value' => 'klaviyo'],
     );
 
     consentFlow();
@@ -164,8 +193,8 @@ it('falls back to native routing when a Klaviyo option is stored without an acti
     $channel = core()->getAllChannels()->first();
 
     CoreConfig::query()->updateOrCreate(
-        ['code' => 'marketing_automation.routing.settings.abandoned_cart'],
-        ['value' => 'klaviyo', 'channel_code' => $channel->code],
+        ['code' => 'marketing_automation.routing.settings.abandoned_cart', 'channel_code' => $channel->code],
+        ['value' => 'klaviyo'],
     );
 
     expect(app(Settings::class)->routing($channel->code, 'abandoned_cart'))->toBe(RoutingTarget::Native);

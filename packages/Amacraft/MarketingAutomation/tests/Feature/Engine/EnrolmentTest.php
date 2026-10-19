@@ -142,8 +142,8 @@ it('does not enrol when routing is disabled or delegated for the template', func
     $channel = core()->getAllChannels()->first();
 
     CoreConfig::query()->updateOrCreate(
-        ['code' => 'marketing_automation.routing.settings.welcome'],
-        ['value' => 'disabled', 'channel_code' => $channel->code],
+        ['code' => 'marketing_automation.routing.settings.welcome', 'channel_code' => $channel->code],
+        ['value' => 'disabled'],
     );
 
     $flow = makeActiveFlowForTrigger(TriggerType::CustomerRegistered, ['template_key' => 'welcome']);
@@ -153,8 +153,8 @@ it('does not enrol when routing is disabled or delegated for the template', func
     expect(app(EnrolmentService::class)->enrol(customerTriggerEvent($customer->id, $customer->email)))->toHaveCount(0);
 
     CoreConfig::query()->updateOrCreate(
-        ['code' => 'marketing_automation.routing.settings.welcome'],
-        ['value' => 'klaviyo', 'channel_code' => $channel->code],
+        ['code' => 'marketing_automation.routing.settings.welcome', 'channel_code' => $channel->code],
+        ['value' => 'klaviyo'],
     );
 
     expect(app(EnrolmentService::class)->enrol(customerTriggerEvent($customer->id, $customer->email)))->toHaveCount(0);

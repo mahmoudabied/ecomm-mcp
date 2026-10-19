@@ -57,17 +57,53 @@ class PullConsentCommand extends Command
             return;
         }
 
-        $latest = $connection->consent_cursor ?? now()->subYears(1);
+        $since = $connection->consent_cursor ?? now()->subYears(1);
 
+        $latest = $since;
+
+        foreach ($metricIds as $metricId) {
+            $newest = $this->pullMetric($client, $connection, $metricId, $since, $consents);
+
+            if ($newest === null) {
+                $this->warn("Klaviyo consent pull failed for connection {$connection->id}; the cursor stays at {$since->toIso8601String()}.");
+
+                return;
+            }
+
+            if ($newest->greaterThan($latest)) {
+                $latest = $newest;
+            }
+        }
+
+        $connection->forceFill([
+            'consent_cursor'          => $latest,
+            'unsubscribed_metric_ids' => $metricIds,
+        ])->save();
+
+        $this->info("Pulled consent for connection {$connection->id} (cursor {$latest->toIso8601String()}).");
+    }
+
+    /**
+     * Revoke every unsubscribe of one metric since the cursor, oldest first, and return the newest event time.
+     * Null means a page failed, so the caller keeps the cursor and the next run retries the whole window.
+     */
+    protected function pullMetric(KlaviyoClient $client, Connection $connection, string $metricId, Carbon $since, ConsentService $consents): ?Carbon
+    {
         $filter = [
-            'any(metric_id,['.implode(',', array_map(fn ($id) => "\"{$id}\"", $metricIds)).'])',
-            'greater-than(datetime,'.$latest->toIso8601String().')',
+            'equals(metric_id,"'.$metricId.'")',
+            'greater-than(datetime,'.$since->toIso8601String().')',
         ];
+
+        $latest = $since;
 
         $pageCursor = null;
 
         do {
             $page = $client->events($filter, $pageCursor);
+
+            if ($page === null) {
+                return null;
+            }
 
             foreach ($page['data'] ?? [] as $event) {
                 $this->revokeForEvent($connection, $event, $page['included'] ?? null, $consents);
@@ -85,12 +121,7 @@ class PullConsentCommand extends Command
                 : null;
         } while ($pageCursor !== null);
 
-        $connection->forceFill([
-            'consent_cursor'          => $latest,
-            'unsubscribed_metric_ids' => $metricIds,
-        ])->save();
-
-        $this->info("Pulled consent for connection {$connection->id} (cursor {$latest->toIso8601String()}).");
+        return $latest;
     }
 
     /**
@@ -114,9 +145,8 @@ class PullConsentCommand extends Command
     }
 
     /**
-     * Revoke the contact consent an unsubscribe event refers to. Klaviyo ships
-     * the profile and metric of an event as related resources, so both are
-     * resolved from the page's top-level `included` array by relationship id.
+     * Revoke the consent an unsubscribe event refers to; Klaviyo ships the profile
+     * and metric as related resources, resolved from the page's `included` array.
      */
     protected function revokeForEvent(Connection $connection, array $event, ?array $included, ConsentService $consents): void
     {
