@@ -223,7 +223,7 @@ it('reactivates the cart of a logged-in customer', function () {
         ->and($abandoned->refresh()->restored_cart_id)->toBeNull();
 });
 
-it('copies a customer cart into a guest cart without a login redirect', function () {
+it('copies only the items of a customer cart into a guest cart, never the addresses', function () {
     $customer = Customer::factory()->create();
 
     $cart = recCart(customerId: $customer->id);
@@ -260,9 +260,8 @@ it('copies a customer cart into a guest cart without a login redirect', function
     expect($restored->items->count())->toBe(1)
         ->and((int) $restored->items->first()->quantity)->toBe(2)
         ->and($restored->customer_id)->toBeNull()
-        ->and($restored->billing_address?->first_name)->toBe('Restored')
-        ->and($restored->billing_address->phone)->toBe('+966501234567')
-        ->and($restored->billing_address->cart_id)->toBe($restoredCartId);
+        ->and($restored->billing_address)->toBeNull()
+        ->and($restored->shipping_address)->toBeNull();
 });
 
 it('recovers the original abandoned cart when an order is placed from the restored cart', function () {
