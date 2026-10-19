@@ -9,8 +9,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "amacraft/bagisto-klaviyo": "*@dev",
-        "amacraft/bagisto-marketing-automation": "*@dev",
+        "amacraft/bagisto-klaviyo": "^1.0",
+        "amacraft/bagisto-marketing-automation": "^1.0",
         "ext-calendar": "*",
         "ext-curl": "*",
         "ext-intl": "*",

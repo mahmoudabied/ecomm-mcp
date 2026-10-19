@@ -4,18 +4,18 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9502d9cc745425f1ca3b251e32ca448b",
+    "content-hash": "1b98aae8765bfeaad1d1b54e3ba27ee5",
     "packages": [
         {
             "name": "amacraft/bagisto-klaviyo",
-            "version": "dev-002-marketing-automation",
+            "version": "1.0.0",
             "dist": {
                 "type": "path",
                 "url": "packages/Amacraft/Klaviyo",
-                "reference": "aef508d27e16f0b934be7fd1c673587dda88f4f5"
+                "reference": "56b3b841996ef10d4cb74d110cd59db8e3a1103c"
             },
             "require": {
-                "amacraft/bagisto-marketing-automation": "self.version",
+                "amacraft/bagisto-marketing-automation": "^1.0",
                 "illuminate/support": "^11.0",
                 "php": "^8.2"
             },
@@ -59,11 +59,11 @@
         },
         {
             "name": "amacraft/bagisto-marketing-automation",
-            "version": "dev-002-marketing-automation",
+            "version": "1.0.0",
             "dist": {
                 "type": "path",
                 "url": "packages/Amacraft/MarketingAutomation",
-                "reference": "041e60004056fca18a971f8eb4c7e2809f34a3ee"
+                "reference": "08dbcf666ffdb353cb49a0ae408bde4cc9fd309a"
             },
             "require": {
                 "giggsey/libphonenumber-for-php-lite": "^9.0",
@@ -15605,8 +15605,6 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "amacraft/bagisto-klaviyo": 20,
-        "amacraft/bagisto-marketing-automation": 20,
         "bagisto/image-cache": 20
     },
     "prefer-stable": true,

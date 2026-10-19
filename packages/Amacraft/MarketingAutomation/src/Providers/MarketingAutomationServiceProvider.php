@@ -136,11 +136,11 @@ class MarketingAutomationServiceProvider extends ServiceProvider
         ], 'ma-config');
 
         $this->publishes([
-            dirname(__DIR__).'/Resources/views' => resource_path('views/vendor/marketing-automation'),
+            dirname(__DIR__).'/Resources/views' => resource_path('views/vendor/marketing_automation'),
         ], 'ma-views');
 
         $this->publishes([
-            dirname(__DIR__).'/Resources/lang' => lang_path('vendor/marketing-automation'),
+            dirname(__DIR__).'/Resources/lang' => lang_path('vendor/marketing_automation'),
         ], 'ma-lang');
 
         $this->publishes([

@@ -2,6 +2,7 @@
     "name": "amacraft/bagisto-marketing-automation",
     "description": "Marketing automation for Bagisto: flows, abandoned-cart recovery, consent, email/SMS/WhatsApp messaging",
     "type": "library",
+    "version": "1.0.0",
     "license": "proprietary",
     "authors": [
         {
