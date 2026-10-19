@@ -66,11 +66,13 @@ class KlaviyoServiceProvider extends ServiceProvider
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('klaviyo:flush-outbox')
                 ->everyMinute()
-                ->withoutOverlapping();
+                ->withoutOverlapping(10)
+                ->onOneServer();
 
             $schedule->command('klaviyo:pull-consent')
                 ->everyFifteenMinutes()
-                ->withoutOverlapping();
+                ->withoutOverlapping(10)
+                ->onOneServer();
         });
     }
 

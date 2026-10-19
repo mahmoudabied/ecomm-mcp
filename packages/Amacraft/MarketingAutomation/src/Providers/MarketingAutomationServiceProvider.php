@@ -105,20 +105,24 @@ class MarketingAutomationServiceProvider extends ServiceProvider
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('automation:dispatch-due')
                 ->everyMinute()
-                ->withoutOverlapping()
+                ->withoutOverlapping(10)
+                ->onOneServer()
                 ->runInBackground();
 
             $schedule->command('automation:detect-abandoned-carts')
                 ->everyFiveMinutes()
-                ->withoutOverlapping();
+                ->withoutOverlapping(10)
+                ->onOneServer();
 
             $schedule->command('automation:daily-triggers')
                 ->hourly()
-                ->withoutOverlapping();
+                ->withoutOverlapping(10)
+                ->onOneServer();
 
             $schedule->command('automation:purge-logs')
                 ->daily()
-                ->withoutOverlapping();
+                ->withoutOverlapping(10)
+                ->onOneServer();
         });
     }
 
