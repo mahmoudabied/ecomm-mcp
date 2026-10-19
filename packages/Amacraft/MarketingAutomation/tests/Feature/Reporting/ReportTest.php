@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Event;
-use Webkul\Customer\Models\Customer;
 use Amacraft\MarketingAutomation\DTOs\TriggerEvent;
 use Amacraft\MarketingAutomation\Engine\EnrolmentService;
 use Amacraft\MarketingAutomation\Engine\ExitGoalService;
@@ -13,6 +11,8 @@ use Amacraft\MarketingAutomation\Models\Flow;
 use Amacraft\MarketingAutomation\Repositories\FlowRepository;
 use Amacraft\MarketingAutomation\Repositories\StepStatRepository;
 use Amacraft\MarketingAutomation\Services\ConsentService;
+use Illuminate\Support\Facades\Event;
+use Webkul\Customer\Models\Customer;
 use Webkul\Sales\Models\Order;
 use Webkul\Sales\Models\OrderAddress;
 use Webkul\Sales\Models\OrderPayment;
@@ -189,7 +189,9 @@ it('renders the report page for browsers', function () {
         ->get(route('admin.marketing.automation.flows.report', $flow->id))
         ->assertOk()
         ->assertSee($flow->name)
-        ->assertSee(trans('marketing_automation::app.reports.enrolled'));
+        ->assertSee(trans('marketing_automation::app.reports.enrolled'))
+        ->assertSee('textContent', escape: false)
+        ->assertDontSee('list.innerHTML', escape: false);
 });
 
 it('purges aged message and enrolment data but keeps rollups and attributions', function () {

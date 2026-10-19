@@ -173,15 +173,25 @@
                     .then((payload) => {
                         const list = document.getElementById('ma-journey');
 
-                        list.innerHTML = (payload.data?.events ?? []).map((entry) => (
-                            '<li class="border-b py-2 dark:border-gray-700">'
-                                + entry.created_at + ' · ' + entry.event
-                                + (entry.reason ? ' (' + entry.reason + ')' : '')
-                                + (entry.message ? ' · ' + entry.message.channel + ' · ' + entry.message.status
-                                    + (entry.message.recipient_masked ? ' · ' + entry.message.recipient_masked : '')
-                                    + (entry.message.error_message ? ' · ' + entry.message.error_message : '') : '')
-                            + '</li>'
-                        )).join('');
+                        list.replaceChildren(...(payload.data?.events ?? []).map((entry) => {
+                            const item = document.createElement('li');
+
+                            item.className = 'border-b py-2 dark:border-gray-700';
+
+                            item.textContent = [
+                                entry.created_at,
+                                entry.event,
+                                entry.reason ? `(${entry.reason})` : null,
+                                entry.message ? [
+                                    entry.message.channel,
+                                    entry.message.status,
+                                    entry.message.recipient_masked,
+                                    entry.message.error_message,
+                                ].filter(Boolean).join(' · ') : null,
+                            ].filter(Boolean).join(' · ');
+
+                            return item;
+                        }));
 
                         document.getElementById('ma-journey-drawer').classList.remove('hidden');
                     });
