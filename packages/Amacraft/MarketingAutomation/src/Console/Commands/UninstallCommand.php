@@ -70,13 +70,15 @@ class UninstallCommand extends Command
 
     /**
      * Roll back one package's migrations resolved from its own path, so the
-     * command works from packages/ and vendor/ installs alike.
+     * command works from packages/ and vendor/ installs alike. The migrator
+     * prefixes relative paths with the app root, hence realpath.
      */
     protected function rollbackPackage(string $migrationsPath): void
     {
         $this->call('migrate:rollback', [
-            '--path'  => $migrationsPath,
-            '--force' => true,
+            '--path'     => $migrationsPath,
+            '--realpath' => true,
+            '--force'    => true,
         ]);
     }
 
